@@ -7,6 +7,7 @@ import {
     ScrollView,
     Dimensions,
     useWindowDimensions,
+    StatusBar,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -140,6 +141,8 @@ const HomeScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
+
             <ScrollView>
                 <View style={styles.header}>
                     <View>

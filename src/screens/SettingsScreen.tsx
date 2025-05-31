@@ -8,6 +8,7 @@ import {
     Alert,
     TextInput,
     Modal,
+    StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -55,6 +56,8 @@ const SettingsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
+
             <ScrollView>
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Configurações</Text>

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, StatusBar } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList, Voucher } from "../types";
@@ -70,6 +70,8 @@ const VouchersScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
+
             <MonthSelector
                 currentDate={currentMonthDate}
                 onMonthChange={handleMonthChange}
