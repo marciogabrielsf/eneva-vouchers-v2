@@ -22,6 +22,7 @@
     "expo-linear-gradient": "^14.1.4",
     "expo-status-bar": "~2.2.3",
     "expo-updates": "~0.28.12",
+    "lucide-react-native": "^0.511.0",
     "react": "19.0.0",
     "react-native": "0.79.2",
     "react-native-chart-kit": "^6.12.0",

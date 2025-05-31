@@ -4,6 +4,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { COLORS, FONTS, SIZES } from "../theme";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface MonthSelectorProps {
     currentDate: Date;
@@ -34,63 +35,84 @@ const MonthSelector: React.FC<MonthSelectorProps> = ({
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity
-                style={[styles.arrowButton, disabled && styles.disabledButton]}
-                onPress={goToPreviousMonth}
-                disabled={disabled}
+            <LinearGradient
+                colors={["rgba(255, 255, 255, 0.9)", "rgba(248, 249, 255, 0.9)"]}
+                style={styles.selectorCard}
             >
-                <Icon name="chevron-left" size={24} color={disabled ? COLORS.gray : COLORS.black} />
-            </TouchableOpacity>
-            <View style={styles.monthTextContainer}>
-                <Text style={[styles.monthText, disabled && styles.disabledText]}>
-                    {customDateRangeLabel}
-                </Text>
-            </View>
-            <TouchableOpacity
-                style={[styles.arrowButton, disabled && styles.disabledButton]}
-                onPress={goToNextMonth}
-                disabled={disabled}
-            >
-                <Icon
-                    name="chevron-right"
-                    size={24}
-                    color={disabled ? COLORS.gray : COLORS.black}
-                />
-            </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.arrowButton, disabled && styles.disabledButton]}
+                    onPress={goToPreviousMonth}
+                    disabled={disabled}
+                >
+                    <Icon
+                        name="chevron-left"
+                        size={24}
+                        color={disabled ? COLORS.textLight : COLORS.primary}
+                    />
+                </TouchableOpacity>
+
+                <View style={styles.monthTextContainer}>
+                    <Text style={[styles.monthText, disabled && styles.disabledText]}>
+                        {customDateRangeLabel}
+                    </Text>
+                </View>
+
+                <TouchableOpacity
+                    style={[styles.arrowButton, disabled && styles.disabledButton]}
+                    onPress={goToNextMonth}
+                    disabled={disabled}
+                >
+                    <Icon
+                        name="chevron-right"
+                        size={24}
+                        color={disabled ? COLORS.textLight : COLORS.primary}
+                    />
+                </TouchableOpacity>
+            </LinearGradient>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
+        paddingHorizontal: SIZES.padding,
+        marginVertical: SIZES.base,
+    },
+    selectorCard: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingHorizontal: SIZES.padding,
-        paddingVertical: SIZES.base,
-        backgroundColor: COLORS.white,
-        borderRadius: SIZES.radius,
-        marginHorizontal: SIZES.padding,
-        marginVertical: SIZES.base,
-        shadowColor: COLORS.black,
-        shadowOffset: { width: 0, height: 2 },
+        paddingHorizontal: SIZES.padding * 1.25,
+        paddingVertical: SIZES.padding,
+        borderRadius: SIZES.radius * 1.5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        shadowRadius: 12,
+        elevation: 6,
     },
     arrowButton: {
-        padding: SIZES.base,
+        width: 30,
+        height: 30,
+        borderRadius: 20,
+        backgroundColor: "rgba(102, 126, 234, 0.1)",
+        justifyContent: "center",
+        alignItems: "center",
     },
     disabledButton: {
         opacity: 0.5,
+        backgroundColor: "rgba(143, 146, 161, 0.1)",
     },
     monthTextContainer: {
         alignItems: "center",
+        flex: 1,
+        paddingHorizontal: SIZES.padding,
     },
     monthText: {
-        ...FONTS.medium,
-        fontSize: SIZES.large,
-        color: COLORS.black,
+        ...FONTS.bold,
+        fontSize: SIZES.medium,
+        color: COLORS.text,
+        textAlign: "center",
     },
     customRangeText: {
         ...FONTS.regular,

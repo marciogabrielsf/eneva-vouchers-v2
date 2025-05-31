@@ -1,14 +1,25 @@
 import { TextStyle } from "react-native";
 
 export const COLORS = {
-    background: "#E0E0E0",
-    black: "#000000",
+    background: "#f5f6fa",
+    black: "#2c3e50",
     white: "#FFFFFF",
-    green: "#32CD32",
-    gray: "#A9A9A9",
-    lightGray: "#D3D3D3",
-    red: "#FF0000",
+    green: "#27ae60",
+    gray: "#8f92a1",
+    lightGray: "#dcdde1",
+    red: "#e74c3c",
     transparent: "transparent",
+    primary: "#667eea",
+    primaryLight: "rgba(102, 126, 234, 0.1)",
+    secondary: "#764ba2",
+    accent: "#3742fa",
+    success: "#2ed573",
+    warning: "#ffa502",
+    error: "#ff3838",
+    text: "#2c3e50",
+    textLight: "#8f92a1",
+    surface: "#ffffff",
+    surfaceLight: "#f8f9ff",
 };
 
 type FontWeight = TextStyle["fontWeight"];

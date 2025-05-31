@@ -118,13 +118,13 @@ const StatisticsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar backgroundColor="#4a5568" barStyle="light-content" />
+            <StatusBar backgroundColor="#000" barStyle="light-content" />
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header */}
-                <LinearGradient colors={["#4a5568", "#718096"]} style={styles.headerGradient}>
+                <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
                     <Text style={styles.headerTitle}>Estatísticas</Text>
                     <Text style={styles.headerSubtitle}>Análise detalhada dos vouchers</Text>
                 </LinearGradient>

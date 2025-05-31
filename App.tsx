@@ -1,8 +1,6 @@
 import React from "react";
-import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NavigationContainer } from "@react-navigation/native";
-import { VoucherProvider } from "./src/context/VoucherContext";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
 import { SettingsProvider } from "./src/context/SettingsContext";
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -34,12 +32,7 @@ const NavigationRouter = () => {
         );
     }
 
-    return (
-        <>
-            <StatusBar style="dark" backgroundColor={COLORS.white} />
-            {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
-        </>
-    );
+    return <>{isAuthenticated ? <AppNavigator /> : <AuthNavigator />}</>;
 };
 
 export default function App() {

@@ -8,6 +8,7 @@ import {
     Dimensions,
     useWindowDimensions,
     StatusBar,
+    Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -21,6 +22,7 @@ import VoucherItem from "../components/VoucherItem";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import Carousel from "react-native-reanimated-carousel";
+import { LinearGradient } from "expo-linear-gradient";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -140,34 +142,55 @@ const HomeScreen = () => {
     ];
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
+        <View style={styles.container}>
+            <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
+                    <SafeAreaView style={styles.safeArea}>
+                        <StatusBar backgroundColor="#000" barStyle="light-content" />
 
-            <ScrollView>
-                <View style={styles.header}>
-                    <View>
-                        <Text style={styles.greeting}>Olá,</Text>
-                        <Text style={styles.name}>Marcondes</Text>
-                    </View>
-                </View>
-
+                        <View style={styles.header}>
+                            <View style={styles.greetingContainer}>
+                                <Text style={styles.greeting}>Olá,</Text>
+                                <Text style={styles.name}>Marcondes 👋</Text>
+                                <Text style={styles.subtitle}>Bem-vindo de volta</Text>
+                            </View>
+                            <TouchableOpacity style={styles.profileButton}>
+                                <Icon
+                                    name="account-circle"
+                                    size={40}
+                                    color="rgba(255,255,255,0.9)"
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </LinearGradient>
                 <View style={styles.carouselContainer}>
                     <Carousel
                         loop={false}
                         width={width}
-                        height={150}
+                        height={180}
                         data={carouselData}
                         scrollAnimationDuration={1000}
                         onSnapToItem={(index) => setActiveSlide(index)}
                         renderItem={({ item, index }) => (
-                            <View style={styles.earningsCard}>
-                                <Text style={styles.earningsLabel}>Você vai receber</Text>
+                            <LinearGradient
+                                colors={["#112599", "#3841ef"]}
+                                style={styles.earningsCard}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <Icon name="wallet" size={24} color="rgba(255,255,255,0.8)" />
+                                    <Text style={styles.earningsLabel}>Você vai receber</Text>
+                                </View>
                                 <Text style={styles.earningsValue}>
                                     {formatCurrency(item.value - item.value * discountPercentage)}
                                 </Text>
-                                <Text style={styles.earningsPeriod}>{item.title}</Text>
-                                <Text style={styles.dateRange}>{item.dateRange}</Text>
-                            </View>
+                                <View style={styles.cardFooter}>
+                                    <Text style={styles.earningsPeriod}>{item.title}</Text>
+                                    <Text style={styles.dateRange}>{item.dateRange}</Text>
+                                </View>
+                            </LinearGradient>
                         )}
                     />
                     <View style={styles.indicators}>
@@ -183,38 +206,40 @@ const HomeScreen = () => {
                     </View>
                 </View>
 
-                <View style={styles.menuContainer}>
+                {/* <View style={styles.quickActionsContainer}>
                     <TouchableOpacity
-                        style={styles.menuItem}
+                        style={styles.actionCard}
                         onPress={() => navigation.navigate("Vouchers")}
                     >
-                        <View style={styles.menuIcon}>
-                            <Icon name="receipt" size={30} color={COLORS.black} />
-                        </View>
-                        <View style={styles.menuTextContainer}>
-                            <Text style={styles.menuTitle}>Vouchers</Text>
-                            <Text style={styles.menuSubtitle}>Vouchers Mensais, tabelas</Text>
-                        </View>
-                        <Icon name="chevron-right" size={24} color={COLORS.black} />
+                        <LinearGradient
+                            colors={["#112599", "#3841ef"]}
+                            style={styles.actionGradient}
+                        >
+                            <Icon name="receipt" size={28} color="white" />
+                            <Text style={styles.actionTitle}>Vouchers</Text>
+                            <Text style={styles.actionSubtitle}>Gerencie seus recebimentos</Text>
+                        </LinearGradient>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={styles.menuItem}
+                        style={styles.actionCard}
                         onPress={() => navigation.navigate("Statistics")}
                     >
-                        <View style={styles.menuIcon}>
-                            <Icon name="chart-pie" size={30} color={COLORS.black} />
-                        </View>
-                        <View style={styles.menuTextContainer}>
-                            <Text style={styles.menuTitle}>Estatísticas</Text>
-                            <Text style={styles.menuSubtitle}>Faturamento, descontos</Text>
-                        </View>
-                        <Icon name="chevron-right" size={24} color={COLORS.black} />
+                        <LinearGradient
+                            colors={["#11998e", "#31de73"]}
+                            style={styles.actionGradient}
+                        >
+                            <Icon name="chart-line" size={28} color="white" />
+                            <Text style={styles.actionTitle}>Estatísticas</Text>
+                            <Text style={styles.actionSubtitle}>Análises e relatórios</Text>
+                        </LinearGradient>
                     </TouchableOpacity>
-                </View>
+                </View> */}
 
                 <View style={styles.recentContainer}>
-                    <Text style={styles.recentTitle}>Últimos Registros</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.recentTitle}>Últimos Registros</Text>
+                    </View>
 
                     {recentVouchers.map((voucher) => (
                         <TouchableOpacity
@@ -222,11 +247,16 @@ const HomeScreen = () => {
                             style={styles.recentItem}
                             onPress={() => navigateToVoucherDetails(voucher.id)}
                         >
-                            <View>
-                                <Text style={styles.recentItemTitle}>Voucher</Text>
-                                <Text style={styles.recentItemSubtitle}>
-                                    {voucher.taxNumber} - {voucher.requestCode.substring(4)}
-                                </Text>
+                            <View style={styles.recentItemLeft}>
+                                <View style={styles.voucherIcon}>
+                                    <Icon name="receipt" size={20} color="#112599" />
+                                </View>
+                                <View>
+                                    <Text style={styles.recentItemTitle}>Voucher</Text>
+                                    <Text style={styles.recentItemSubtitle}>
+                                        {voucher.taxNumber}
+                                    </Text>
+                                </View>
                             </View>
                             <View style={styles.recentItemRight}>
                                 <Text style={styles.recentItemPrice}>
@@ -243,68 +273,123 @@ const HomeScreen = () => {
                     ))}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: "#f8f9fa",
+    },
+    headerGradient: {
+        paddingBottom: SIZES.padding * 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 8,
+        marginTop: -SIZES.padding * 3,
+        paddingTop: SIZES.padding * 3,
+    },
+    safeArea: {
+        paddingHorizontal: SIZES.padding,
     },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        paddingHorizontal: SIZES.padding,
-        paddingTop: SIZES.padding * 2,
+        paddingTop: SIZES.padding,
         paddingBottom: SIZES.padding,
+    },
+    greetingContainer: {
+        flex: 1,
     },
     greeting: {
         ...FONTS.regular,
         fontSize: SIZES.medium,
-        color: COLORS.black,
+        color: "rgba(255,255,255,0.8)",
     },
     name: {
         ...FONTS.bold,
         fontSize: SIZES.xxlarge,
-        color: COLORS.black,
+        color: COLORS.white,
+        marginTop: 4,
+    },
+    subtitle: {
+        ...FONTS.regular,
+        fontSize: SIZES.small,
+        color: "rgba(255,255,255,0.7)",
+        marginTop: 2,
+    },
+    profileButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: "rgba(255,255,255,0.1)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    scrollContent: {
+        flex: 1,
     },
     carouselContainer: {
         alignItems: "center",
-        marginBottom: SIZES.padding,
+        marginBottom: SIZES.padding * 2,
+        backgroundColor: COLORS.background,
+        borderTopLeftRadius: SIZES.radius * 2,
+        borderTopRightRadius: SIZES.radius * 2,
+        zIndex: 10,
+        marginTop: -SIZES.padding * 2,
+        paddingTop: SIZES.padding * 2,
     },
     earningsCard: {
-        marginHorizontal: 10,
-        backgroundColor: COLORS.black,
-        borderRadius: SIZES.radius,
-        padding: SIZES.padding,
+        marginHorizontal: 12,
+        borderRadius: SIZES.radius * 2,
+        padding: SIZES.padding * 1.5,
         height: "100%",
-        justifyContent: "center",
+        justifyContent: "space-between",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    cardHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: SIZES.base,
     },
     earningsLabel: {
-        ...FONTS.regular,
+        ...FONTS.medium,
         fontSize: SIZES.medium,
-        color: COLORS.white,
+        color: "rgba(255,255,255,0.9)",
+        marginLeft: SIZES.base,
     },
     earningsValue: {
         ...FONTS.bold,
-        fontSize: SIZES.xxlarge,
-        color: COLORS.green,
-        marginTop: SIZES.base,
-        marginBottom: SIZES.base,
+        fontSize: SIZES.xxxlarge,
+        color: COLORS.white,
+        textAlign: "center",
+        textShadowColor: "rgba(0,0,0,0.1)",
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+    },
+    cardFooter: {
+        alignItems: "center",
     },
     earningsPeriod: {
         ...FONTS.regular,
         fontSize: SIZES.small,
-        color: COLORS.white,
-        // marginBottom: SIZES.padding,
+        color: "rgba(255,255,255,0.8)",
+        textAlign: "center",
     },
     dateRange: {
-        ...FONTS.regular,
+        ...FONTS.medium,
         fontSize: SIZES.small,
-        color: COLORS.lightGray,
-        marginTop: 2,
+        color: "rgba(255,255,255,0.9)",
+        marginTop: 4,
+        textAlign: "center",
     },
     indicators: {
         flexDirection: "row",
@@ -315,12 +400,48 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: COLORS.gray,
+        backgroundColor: "rgba(0,0,0,0.2)",
         marginHorizontal: 4,
     },
     activeIndicator: {
-        backgroundColor: COLORS.black,
-        width: 16,
+        backgroundColor: "#112599",
+        width: 24,
+    },
+    quickActionsContainer: {
+        flexDirection: "row",
+        paddingHorizontal: SIZES.padding,
+        marginBottom: SIZES.padding * 2,
+        gap: SIZES.padding,
+    },
+    actionCard: {
+        flex: 1,
+        borderRadius: SIZES.radius * 1.5,
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    actionGradient: {
+        padding: SIZES.padding * 1.5,
+        alignItems: "center",
+        minHeight: 120,
+        justifyContent: "center",
+    },
+    actionTitle: {
+        ...FONTS.bold,
+        fontSize: SIZES.medium,
+        color: "white",
+        marginTop: SIZES.base,
+        textAlign: "center",
+    },
+    actionSubtitle: {
+        ...FONTS.regular,
+        fontSize: SIZES.small,
+        color: "rgba(255,255,255,0.8)",
+        marginTop: 4,
+        textAlign: "center",
     },
     menuContainer: {
         marginVertical: SIZES.padding,
@@ -364,32 +485,63 @@ const styles = StyleSheet.create({
     },
     recentContainer: {
         marginBottom: SIZES.padding * 4,
+        paddingHorizontal: SIZES.padding,
+    },
+    sectionHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: SIZES.padding,
     },
     recentTitle: {
-        ...FONTS.medium,
+        ...FONTS.bold,
         fontSize: SIZES.large,
-        color: COLORS.black,
-        marginHorizontal: SIZES.padding,
-        marginBottom: SIZES.padding,
+        color: "#2c3e50",
+    },
+    seeAllButton: {
+        ...FONTS.medium,
+        fontSize: SIZES.medium,
+        color: "#112599",
     },
     recentItem: {
         flexDirection: "row",
         justifyContent: "space-between",
-        backgroundColor: COLORS.lightGray,
-        borderRadius: SIZES.radius,
+        alignItems: "center",
+        backgroundColor: COLORS.white,
+        borderRadius: SIZES.radius * 1.5,
         padding: SIZES.padding,
-        marginHorizontal: SIZES.padding,
         marginBottom: SIZES.base,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    recentItemLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+    voucherIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(17, 37, 153, 0.1)",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: SIZES.padding,
     },
     recentItemTitle: {
-        ...FONTS.regular,
+        ...FONTS.medium,
         fontSize: SIZES.small,
-        color: COLORS.gray,
+        color: "#8f92a1",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
     },
     recentItemSubtitle: {
         ...FONTS.medium,
         fontSize: SIZES.medium,
-        color: COLORS.black,
+        color: "#2c3e50",
         marginTop: 2,
     },
     recentItemRight: {
@@ -398,12 +550,12 @@ const styles = StyleSheet.create({
     recentItemPrice: {
         ...FONTS.bold,
         fontSize: SIZES.medium,
-        color: COLORS.green,
+        color: "#27ae60",
     },
     recentItemDate: {
         ...FONTS.regular,
         fontSize: SIZES.small,
-        color: COLORS.gray,
+        color: "#8f92a1",
         marginTop: 2,
     },
 });
