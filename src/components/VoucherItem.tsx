@@ -1,7 +1,5 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Voucher } from "../types";
 import { COLORS, FONTS, SIZES } from "../theme";
 
@@ -32,8 +30,11 @@ const VoucherItem: React.FC<VoucherItemProps> = ({ voucher, onPress }) => {
         }
     };
 
-    const formattedDate = format(new Date(voucher.date), "dd 'de' MMMM 'de' yyyy", {
-        locale: ptBR,
+    const formattedDate = new Date(voucher.date).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        timeZone: "utc",
     });
 
     return (

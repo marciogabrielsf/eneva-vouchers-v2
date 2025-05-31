@@ -39,6 +39,14 @@ const StatisticsScreen = () => {
                 return "Transporte";
             case "DEL":
                 return "Entrega";
+            case "OPE":
+                return "Operacional";
+            case "ADM":
+                return "Administrativo";
+            case "GES":
+                return "Gestão";
+            case "ENG":
+                return "Engenharia";
             default:
                 return category;
         }
@@ -53,6 +61,14 @@ const StatisticsScreen = () => {
                 return "#2196F3"; // Blue
             case "DEL":
                 return "#FF9800"; // Orange
+            case "OPE":
+                return "#9C27B0"; // Purple
+            case "ADM":
+                return "#FF5722"; // Red
+            case "GES":
+                return "#3F51B5"; // Indigo
+            case "ENG":
+                return "#009688"; // Teal
             default:
                 return "#9E9E9E"; // Gray
         }
@@ -81,59 +97,65 @@ const StatisticsScreen = () => {
                     <Text style={styles.chartTitle}>Análise por Categoria</Text>
 
                     <View style={styles.chartLegend}>
-                        {Object.keys(categoryBreakdown).map((category) => (
-                            <View key={category} style={styles.legendItem}>
-                                <View
-                                    style={[
-                                        styles.legendColor,
-                                        { backgroundColor: getCategoryColor(category) },
-                                    ]}
-                                />
-                                <Text style={styles.legendText}>
-                                    {getCategoryDescription(category)}
-                                </Text>
-                            </View>
-                        ))}
+                        {Object.entries(categoryBreakdown)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([category]) => (
+                                <View key={category} style={styles.legendItem}>
+                                    <View
+                                        style={[
+                                            styles.legendColor,
+                                            { backgroundColor: getCategoryColor(category) },
+                                        ]}
+                                    />
+                                    <Text style={styles.legendText}>
+                                        {getCategoryDescription(category)}
+                                    </Text>
+                                </View>
+                            ))}
                     </View>
 
                     {/* Simple bar chart */}
                     <View style={styles.barChart}>
-                        {Object.entries(categoryBreakdown).map(([category, value]) => (
-                            <View key={category} style={styles.barContainer}>
-                                <Text style={styles.barLabel}>{category}</Text>
-                                <View style={styles.barBackground}>
-                                    <View
-                                        style={[
-                                            styles.barFill,
-                                            {
-                                                width: `${(value / totalValue) * 100}%`,
-                                                backgroundColor: getCategoryColor(category),
-                                            },
-                                        ]}
-                                    />
+                        {Object.entries(categoryBreakdown)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([category, value]) => (
+                                <View key={category} style={styles.barContainer}>
+                                    <Text style={styles.barLabel}>{category}</Text>
+                                    <View style={styles.barBackground}>
+                                        <View
+                                            style={[
+                                                styles.barFill,
+                                                {
+                                                    width: `${(value / totalValue) * 100}%`,
+                                                    backgroundColor: getCategoryColor(category),
+                                                },
+                                            ]}
+                                        />
+                                    </View>
+                                    <Text style={styles.barValue}>{formatCurrency(value)}</Text>
                                 </View>
-                                <Text style={styles.barValue}>{formatCurrency(value)}</Text>
-                            </View>
-                        ))}
+                            ))}
                     </View>
                 </View>
 
                 <View style={styles.statsCard}>
                     <Text style={styles.statsTitle}>Detalhamento</Text>
 
-                    {Object.entries(categoryBreakdown).map(([category, value]) => (
-                        <View key={category} style={styles.statItem}>
-                            <View style={styles.statHeader}>
-                                <Text style={styles.statName}>
-                                    {getCategoryDescription(category)}
+                    {Object.entries(categoryBreakdown)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([category, value]) => (
+                            <View key={category} style={styles.statItem}>
+                                <View style={styles.statHeader}>
+                                    <Text style={styles.statName}>
+                                        {getCategoryDescription(category)}
+                                    </Text>
+                                    <Text style={styles.statValue}>{formatCurrency(value)}</Text>
+                                </View>
+                                <Text style={styles.statPercent}>
+                                    {`${((value / totalValue) * 100).toFixed(1)}% do total`}
                                 </Text>
-                                <Text style={styles.statValue}>{formatCurrency(value)}</Text>
                             </View>
-                            <Text style={styles.statPercent}>
-                                {`${((value / totalValue) * 100).toFixed(1)}% do total`}
-                            </Text>
-                        </View>
-                    ))}
+                        ))}
                 </View>
             </ScrollView>
         </SafeAreaView>

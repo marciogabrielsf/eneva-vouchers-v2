@@ -10,6 +10,10 @@ export interface CreateVoucherData {
     destination: string;
 }
 
+interface VoucherResponse {
+    vouchers: Voucher[];
+}
+
 export interface UpdateVoucherData extends CreateVoucherData {}
 
 export const voucherService = {
@@ -27,11 +31,13 @@ export const voucherService = {
     // Get list of vouchers
     getVouchers: async () => {
         try {
-            const response = await api.get("/v2/voucher/getlist");
+            const response = await api.get<VoucherResponse>("/v2/voucher/getlist");
             return response.data.vouchers;
         } catch (error) {
             console.error("Error getting vouchers:", error);
-            console.log(error.response.data);
+            if (error && typeof error === "object" && "response" in error) {
+                console.log((error as any).response.data);
+            }
             throw error;
         }
     },

@@ -48,11 +48,9 @@ export default function App() {
             <QueryClientProvider client={queryClient}>
                 <AuthProvider>
                     <SettingsProvider>
-                        <VoucherProvider>
-                            <NavigationContainer>
-                                <NavigationRouter />
-                            </NavigationContainer>
-                        </VoucherProvider>
+                        <NavigationContainer>
+                            <NavigationRouter />
+                        </NavigationContainer>
                     </SettingsProvider>
                 </AuthProvider>
             </QueryClientProvider>

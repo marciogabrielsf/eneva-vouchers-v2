@@ -6,14 +6,16 @@ import React, {
     useEffect,
     useCallback,
     useRef,
+    useMemo,
 } from "react";
 import { Voucher, VoucherListParams } from "../types";
 import voucherService from "../services/voucherService";
-import { endOfDay, format, startOfDay } from "date-fns";
+import { addHours, endOfDay, format, startOfDay } from "date-fns";
 import { useSettings } from "./SettingsContext";
 
 interface VoucherContextData {
     vouchers: Voucher[];
+    filteredVouchers: Voucher[];
     totalEarnings: number;
     currentMonthDate: Date;
     categoryBreakdown: Record<string, number>;
@@ -27,17 +29,13 @@ interface VoucherContextData {
     loadVouchers: (params?: VoucherListParams) => Promise<void>;
     getMonthRangeLabel: () => string;
     getVouchersByMonth: (month: number) => Voucher[];
-    unfilteredVouchers: Voucher[];
 }
 
 const VoucherContext = createContext<VoucherContextData>({} as VoucherContextData);
 
 export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [vouchers, setVouchers] = useState<Voucher[]>([]);
-    const [unfilteredVouchers, setUnfilteredVouchers] = useState<Voucher[]>([]);
-    const [totalEarnings, setTotalEarnings] = useState<number>(0);
     const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
-    const [categoryBreakdown, setCategoryBreakdown] = useState<Record<string, number>>({});
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const { monthStartDay } = useSettings();
@@ -90,6 +88,25 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
         )} - ${endDate.toLocaleDateString("pt-BR", formatOptions)}`;
     };
 
+    const filteredVouchers = vouchers
+        .filter((voucher) => {
+            const voucherDate = new Date(voucher.date);
+            const { startDate, endDate } = getCustomMonthDateRange(currentMonthDate, monthStartDay);
+            return voucherDate >= startDate && voucherDate <= endDate;
+        })
+        .sort((a, b) => {
+            return new Date(b.date).getTime() - new Date(a.date).getTime(); // Sort by date descending
+        });
+
+    const totalEarnings = useMemo(
+        () => calculateTotalEarnings(filteredVouchers),
+        [filteredVouchers]
+    );
+    const categoryBreakdown = useMemo(
+        () => calculateCategoryBreakdown(filteredVouchers),
+        [filteredVouchers]
+    );
+
     // Wrap loadVouchers with useCallback to prevent it from being recreated on every render
     // CRITICAL: Remove isLoading from dependencies to break the circular dependency
     const loadVouchers = useCallback(
@@ -103,32 +120,15 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
 
             try {
                 const response = await voucherService.getVouchers();
-                let filteredVouchers = response;
 
-                setUnfilteredVouchers(response);
+                const vouchers = response.map((voucher) => {
+                    return {
+                        ...voucher,
+                        date: addHours(new Date(voucher.date), 3).toISOString(),
+                    };
+                });
 
-                // Filter vouchers by date range if params provided
-                if (params) {
-                    filteredVouchers = response.filter((voucher: Voucher) => {
-                        const voucherDate = new Date(voucher.date);
-                        return voucherDate >= params.startDate && voucherDate <= params.endDate;
-                    });
-                } else {
-                    // Filter for custom month range using monthStartDay
-                    const { startDate, endDate } = getCustomMonthDateRange(
-                        currentMonthDate,
-                        monthStartDay
-                    );
-
-                    filteredVouchers = response.filter((voucher: Voucher) => {
-                        const voucherDate = new Date(voucher.date);
-                        return voucherDate >= startDate && voucherDate <= endDate;
-                    });
-                }
-
-                setVouchers(filteredVouchers);
-                setTotalEarnings(calculateTotalEarnings(filteredVouchers));
-                setCategoryBreakdown(calculateCategoryBreakdown(filteredVouchers));
+                setVouchers(vouchers);
             } catch (err: any) {
                 setError(err.message || "Failed to load vouchers");
                 console.error("Error loading vouchers:", err);
@@ -146,7 +146,7 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
         // This will use the most recent version of loadVouchers
         // but won't re-run when loadVouchers changes
         loadVouchers();
-    }, [currentMonthDate, monthStartDay]); // Add monthStartDay as dependency
+    }, [monthStartDay]); // Add monthStartDay as dependency
 
     const addVoucher = async (voucherData: Omit<Voucher, "id">) => {
         setIsLoading(true);
@@ -237,11 +237,11 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
 
     const getVoucherById = (id: string): Voucher | undefined => {
-        return unfilteredVouchers.find((v) => v.id === id);
+        return vouchers.find((v) => v.id === id);
     };
 
     const getVouchersByMonth = (month: number) => {
-        return unfilteredVouchers.filter((v) => new Date(v.date).getMonth() === month);
+        return vouchers.filter((v) => new Date(v.date).getMonth() === month);
     };
     return (
         <VoucherContext.Provider
@@ -260,7 +260,7 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
                 loadVouchers,
                 getMonthRangeLabel,
                 getVouchersByMonth,
-                unfilteredVouchers,
+                filteredVouchers,
             }}
         >
             {children}

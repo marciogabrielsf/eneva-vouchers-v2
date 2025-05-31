@@ -12,7 +12,7 @@ import SettingsScreen from "../screens/SettingsScreen";
 import VoucherFormScreen from "../screens/VoucherFormScreen";
 import VoucherDetailsScreen from "../screens/VoucherDetailsScreen";
 import { useAuth } from "../context/AuthContext";
-import { TouchableOpacity } from "react-native";
+import { VoucherProvider } from "../context/VoucherContext";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -77,50 +77,52 @@ const AppNavigator = () => {
     const { logout } = useAuth();
 
     return (
-        <Stack.Navigator
-            screenOptions={{
-                headerStyle: {
-                    backgroundColor: COLORS.white,
-                },
-                headerTintColor: COLORS.black,
-                headerTitleStyle: {
-                    fontWeight: "bold",
-                },
-                contentStyle: {
-                    backgroundColor: COLORS.background,
-                },
-            }}
-        >
-            <Stack.Screen
-                name="Home"
-                component={BottomTabNavigator}
-                options={{
-                    headerShown: false,
+        <VoucherProvider>
+            <Stack.Navigator
+                screenOptions={{
+                    headerStyle: {
+                        backgroundColor: COLORS.white,
+                    },
+                    headerTintColor: COLORS.black,
+                    headerTitleStyle: {
+                        fontWeight: "bold",
+                    },
+                    contentStyle: {
+                        backgroundColor: COLORS.background,
+                    },
                 }}
-            />
-            <Stack.Screen
-                name="Vouchers"
-                component={VouchersScreen}
-                options={{ title: "Vouchers" }}
-            />
-            <Stack.Screen
-                name="Statistics"
-                component={StatisticsScreen}
-                options={{ title: "Estatísticas" }}
-            />
-            <Stack.Screen
-                name="VoucherForm"
-                component={VoucherFormScreen}
-                options={({ route }) => ({
-                    title: route.params?.voucher ? "Editar Voucher" : "Adicionar Voucher",
-                })}
-            />
-            <Stack.Screen
-                name="VoucherDetails"
-                component={VoucherDetailsScreen}
-                options={{ title: "Detalhes do Voucher" }}
-            />
-        </Stack.Navigator>
+            >
+                <Stack.Screen
+                    name="Home"
+                    component={BottomTabNavigator}
+                    options={{
+                        headerShown: false,
+                    }}
+                />
+                <Stack.Screen
+                    name="Vouchers"
+                    component={VouchersScreen}
+                    options={{ title: "Vouchers" }}
+                />
+                <Stack.Screen
+                    name="Statistics"
+                    component={StatisticsScreen}
+                    options={{ title: "Estatísticas" }}
+                />
+                <Stack.Screen
+                    name="VoucherForm"
+                    component={VoucherFormScreen}
+                    options={({ route }) => ({
+                        title: route.params?.voucher ? "Editar Voucher" : "Adicionar Voucher",
+                    })}
+                />
+                <Stack.Screen
+                    name="VoucherDetails"
+                    component={VoucherDetailsScreen}
+                    options={{ title: "Detalhes do Voucher" }}
+                />
+            </Stack.Navigator>
+        </VoucherProvider>
     );
 };
 

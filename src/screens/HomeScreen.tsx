@@ -25,7 +25,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
-    const { unfilteredVouchers, currentMonthDate } = useVouchers();
+    const { vouchers, currentMonthDate } = useVouchers();
     const { discountPercentage, monthStartDay } = useSettings();
     const [activeSlide, setActiveSlide] = useState(0);
     const { width } = useWindowDimensions();
@@ -48,19 +48,19 @@ const HomeScreen = () => {
     };
 
     // Filter vouchers for each month period
-    const firstMonthVouchers = unfilteredVouchers.filter((voucher) => {
+    const firstMonthVouchers = vouchers.filter((voucher) => {
         const voucherDate = new Date(voucher.date);
         const { startDate, endDate } = getCustomMonthDateRange(actualDate, -2);
         return voucherDate >= startDate && voucherDate <= endDate;
     });
 
-    const secondMonthVouchers = unfilteredVouchers.filter((voucher) => {
+    const secondMonthVouchers = vouchers.filter((voucher) => {
         const voucherDate = new Date(voucher.date);
         const { startDate, endDate } = getCustomMonthDateRange(actualDate, -1);
         return voucherDate >= startDate && voucherDate <= endDate;
     });
 
-    const thirdMonthVouchers = unfilteredVouchers.filter((voucher) => {
+    const thirdMonthVouchers = vouchers.filter((voucher) => {
         const voucherDate = new Date(voucher.date);
         const { startDate, endDate } = getCustomMonthDateRange(actualDate, 0);
         return voucherDate >= startDate && voucherDate <= endDate;
@@ -77,16 +77,18 @@ const HomeScreen = () => {
         navigation.navigate("VoucherDetails", { id });
     };
 
-    const recentVouchers = unfilteredVouchers.slice(0, 2); // Show just the 2 most recent vouchers on home screen
+    const recentVouchers = vouchers
+        .slice(-5)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Show just the last 5 vouchers on home screen
 
     // Helper for date formatting with proper capitalization
     const formatPtBrDate = (date: Date, formatString: string) => {
-        return format(date, formatString, { locale: ptBR }).replace(
-            /de ([a-zç]+)/gi,
-            (match, word) => {
-                return `de ${word.charAt(0).toUpperCase() + word.slice(1)}`;
-            }
-        );
+        return date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "utc",
+        });
     };
 
     // Helper function to get a label for each month period

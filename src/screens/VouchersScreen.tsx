@@ -15,7 +15,7 @@ type VoucherScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>
 const VouchersScreen = () => {
     const navigation = useNavigation<VoucherScreenNavigationProp>();
     const {
-        vouchers,
+        filteredVouchers,
         currentMonthDate,
         setCurrentMonthDate,
         totalEarnings,
@@ -43,17 +43,17 @@ const VouchersScreen = () => {
 
     // Load data once when component mounts
     useEffect(() => {
-        if (!initialLoadDone.current && !isLoading && vouchers.length === 0) {
+        if (!initialLoadDone.current && !isLoading && filteredVouchers.length === 0) {
             // Only load if we haven't loaded before, aren't currently loading, and have no data
             initialLoadDone.current = true;
             loadVouchers();
         }
-    }, [vouchers.length, isLoading]);
+    }, [filteredVouchers.length, isLoading]);
 
     const handleMonthChange = (date: Date) => {
         setCurrentMonthDate(date);
         // The loadVouchers will be triggered by the useEffect in VoucherContext
-        // that watches currentMonthDate changes
+        // that watches currentMonthDate changesw
     };
 
     const handleVoucherPress = (voucher: Voucher) => {
@@ -84,7 +84,7 @@ const VouchersScreen = () => {
                 </View>
             )}
 
-            {vouchers.length === 0 ? (
+            {filteredVouchers.length === 0 ? (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>
                         Nenhum voucher encontrado para este período
@@ -93,7 +93,7 @@ const VouchersScreen = () => {
             ) : (
                 !isLoading && (
                     <FlatList
-                        data={vouchers}
+                        data={filteredVouchers}
                         ListHeaderComponent={
                             <View style={styles.totalContainer}>
                                 <Text style={styles.totalLabel}>Subtotal de recebimentos:</Text>
