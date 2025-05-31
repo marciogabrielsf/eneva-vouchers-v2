@@ -16,6 +16,25 @@ export interface VoucherListParams {
     limit?: number;
 }
 
+export interface EarningsStatisticsData {
+    date: string; // YYYY-MM-DD
+    value: number; // Soma dos valores dos vouchers neste intervalo
+    count: number; // Quantidade de vouchers neste intervalo
+}
+
+export interface EarningsStatisticsResponse {
+    data: EarningsStatisticsData[];
+    summary: {
+        totalEarnings: number; // Total de ganhos no período
+        voucherCount: number; // Total de vouchers no período
+        period: {
+            from: string; // Data de início (YYYY-MM-DD)
+            to: string; // Data de fim (YYYY-MM-DD)
+        };
+        intervalDays: number; // Quantos dias cada ponto do gráfico representa
+    };
+}
+
 export type RootStackParamList = {
     Home: undefined;
     Vouchers: undefined;

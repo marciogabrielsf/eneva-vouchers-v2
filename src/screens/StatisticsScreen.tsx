@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { useVouchers } from "../context/VoucherContext";
 import { useSettings } from "../context/SettingsContext";
 import MonthSelector from "../components/MonthSelector";
+import EarningsChart from "../components/EarningsChart";
+import PeriodSelector from "../components/PeriodSelector";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const StatisticsScreen = () => {
@@ -16,8 +18,23 @@ const StatisticsScreen = () => {
     } = useVouchers();
     const { discountPercentage } = useSettings();
 
+    // State for chart period (separate from category breakdown period)
+    const [chartStartDate, setChartStartDate] = useState(() => {
+        const today = new Date();
+        return new Date(today.getFullYear(), today.getMonth(), 1);
+    });
+    const [chartEndDate, setChartEndDate] = useState(() => {
+        const today = new Date();
+        return new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    });
+
     const handleMonthChange = (date: Date) => {
         setCurrentMonthDate(date);
+    };
+
+    const handleChartPeriodChange = (startDate: Date, endDate: Date) => {
+        setChartStartDate(startDate);
+        setChartEndDate(endDate);
     };
 
     const formatCurrency = (value: number) => {
@@ -76,13 +93,23 @@ const StatisticsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <MonthSelector
-                currentDate={currentMonthDate}
-                onMonthChange={handleMonthChange}
-                customDateRangeLabel={getMonthRangeLabel()}
-            />
-
             <ScrollView contentContainerStyle={styles.scrollContent}>
+                {/* Period Selector for Charts */}
+                <PeriodSelector
+                    startDate={chartStartDate}
+                    endDate={chartEndDate}
+                    onPeriodChange={handleChartPeriodChange}
+                />
+
+                {/* Earnings Chart */}
+                <EarningsChart startDate={chartStartDate} endDate={chartEndDate} />
+
+                <MonthSelector
+                    currentDate={currentMonthDate}
+                    onMonthChange={handleMonthChange}
+                    customDateRangeLabel={getMonthRangeLabel()}
+                />
+
                 <View style={styles.summaryCard}>
                     <Text style={styles.summaryTitle}>Faturamento Mensal</Text>
                     <Text style={styles.summaryValue}>{formatCurrency(totalEarnings)}</Text>
@@ -169,6 +196,24 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: SIZES.padding * 2,
+    },
+    sectionDivider: {
+        backgroundColor: COLORS.white,
+        borderRadius: SIZES.radius,
+        padding: SIZES.padding,
+        marginHorizontal: SIZES.padding,
+        marginVertical: SIZES.base,
+        shadowColor: COLORS.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+        alignItems: "center",
+    },
+    sectionTitle: {
+        ...FONTS.medium,
+        fontSize: SIZES.large,
+        color: COLORS.black,
     },
     summaryCard: {
         backgroundColor: COLORS.white,
