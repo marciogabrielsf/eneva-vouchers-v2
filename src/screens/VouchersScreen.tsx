@@ -5,12 +5,11 @@ import {
     StyleSheet,
     FlatList,
     ActivityIndicator,
-    StatusBar,
     Animated,
     RefreshControl,
     Dimensions,
 } from "react-native";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList, Voucher } from "../types";
 import { COLORS, FONTS, SIZES } from "../theme";
@@ -21,6 +20,7 @@ import AddButton from "../components/AddButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import { LinearGradient } from "expo-linear-gradient";
+import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
 type VoucherScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const { width } = Dimensions.get("window");
@@ -107,52 +107,53 @@ const VouchersScreen = () => {
     );
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
-                <SafeAreaView style={styles.safeArea}>
-                    <StatusBar backgroundColor="#000" barStyle="light-content" />
+        <>
+            <FocusAwareStatusBar backgroundColor="#000" animated style="light" />
+            <View style={styles.container}>
+                <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
+                    <SafeAreaView style={styles.safeArea}>
+                        <Animated.View
+                            style={[
+                                styles.headerContent,
+                                {
+                                    opacity: fadeAnim,
+                                    transform: [{ translateY: slideAnim }],
+                                },
+                            ]}
+                        >
+                            <Text style={styles.headerTitle}>Vouchers</Text>
+                            <Text style={styles.headerSubtitle}>Gerencie seus recebimentos</Text>
+                        </Animated.View>
+                    </SafeAreaView>
+                </LinearGradient>
 
-                    <Animated.View
-                        style={[
-                            styles.headerContent,
-                            {
-                                opacity: fadeAnim,
-                                transform: [{ translateY: slideAnim }],
-                            },
-                        ]}
-                    >
-                        <Text style={styles.headerTitle}>Vouchers</Text>
-                        <Text style={styles.headerSubtitle}>Gerencie seus recebimentos</Text>
-                    </Animated.View>
-                </SafeAreaView>
-            </LinearGradient>
+                <View style={styles.contentContainer}>
+                    <MonthSelector
+                        currentDate={currentMonthDate}
+                        onMonthChange={handleMonthChange}
+                        disabled={isLoading}
+                        customDateRangeLabel={getMonthRangeLabel()}
+                    />
 
-            <View style={styles.contentContainer}>
-                <MonthSelector
-                    currentDate={currentMonthDate}
-                    onMonthChange={handleMonthChange}
-                    disabled={isLoading}
-                    customDateRangeLabel={getMonthRangeLabel()}
-                />
-
-                {isLoading && !refreshing && (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color="#667eea" />
-                        <Text style={styles.loadingText}>Carregando vouchers...</Text>
-                    </View>
-                )}
-
-                {filteredVouchers.length === 0 && !isLoading ? (
-                    <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
-                        <View style={styles.emptyIconContainer}>
-                            <Text style={styles.emptyIcon}>📄</Text>
+                    {isLoading && !refreshing && (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#667eea" />
+                            <Text style={styles.loadingText}>Carregando vouchers...</Text>
                         </View>
-                        <Text style={styles.emptyTitle}>Nenhum voucher encontrado</Text>
-                        <Text style={styles.emptySubtitle}>Não há vouchers para este período</Text>
-                    </Animated.View>
-                ) : (
-                    !isLoading && (
-                        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+                    )}
+
+                    {filteredVouchers.length === 0 && !isLoading ? (
+                        <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
+                            <View style={styles.emptyIconContainer}>
+                                <Text style={styles.emptyIcon}>📄</Text>
+                            </View>
+                            <Text style={styles.emptyTitle}>Nenhum voucher encontrado</Text>
+                            <Text style={styles.emptySubtitle}>
+                                Não há vouchers para este período
+                            </Text>
+                        </Animated.View>
+                    ) : (
+                        !isLoading && (
                             <FlatList
                                 data={filteredVouchers}
                                 ListHeaderComponent={
@@ -188,6 +189,9 @@ const VouchersScreen = () => {
                                         </LinearGradient>
                                     </View>
                                 }
+                                windowSize={11}
+                                initialNumToRender={3}
+                                removeClippedSubviews
                                 keyExtractor={(item) => item.id}
                                 renderItem={renderVoucherItem}
                                 contentContainerStyle={styles.listContent}
@@ -201,13 +205,13 @@ const VouchersScreen = () => {
                                     />
                                 }
                             />
-                        </Animated.View>
-                    )
-                )}
+                        )
+                    )}
 
-                <AddButton onPress={handleAddVoucher} disabled={isLoading} />
+                    <AddButton onPress={handleAddVoucher} disabled={isLoading} />
+                </View>
             </View>
-        </View>
+        </>
     );
 };
 
@@ -282,12 +286,12 @@ const styles = StyleSheet.create({
     },
     statValue: {
         ...FONTS.bold,
-        fontSize: SIZES.large,
+        fontSize: SIZES.medium,
         color: "#2c3e50",
     },
     statValueHighlight: {
         ...FONTS.bold,
-        fontSize: SIZES.large,
+        fontSize: SIZES.medium,
         color: "#667eea",
     },
     totalContainer: {

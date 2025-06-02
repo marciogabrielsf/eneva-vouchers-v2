@@ -110,33 +110,35 @@ const VoucherItem: React.FC<VoucherItemProps> = ({ voucher, onPress }) => {
                         },
                     ]}
                 >
-                    <LinearGradient 
-                        colors={isPressed ? ["#e8ecff", "#dce4ff"] : ["#ffffff", "#f8f9ff"]} 
+                    <LinearGradient
+                        colors={isPressed ? ["#e8ecff", "#dce4ff"] : ["#ffffff", "#f8f9ff"]}
                         style={styles.gradientCard}
                     >
-                <View style={styles.cardHeader}>
-                    <View style={styles.categoryBadge}>
-                        <Text style={styles.categoryText}>{categoryName(voucher.requestCode)}</Text>
-                    </View>
-                    <Text style={styles.date}>{formattedDate}</Text>
-                </View>
+                        <View style={styles.cardHeader}>
+                            <View style={styles.categoryBadge}>
+                                <Text style={styles.categoryText}>
+                                    {categoryName(voucher.requestCode)}
+                                </Text>
+                            </View>
+                            <Text style={styles.date}>{formattedDate}</Text>
+                        </View>
 
-                <View style={styles.infoContainer}>
-                    <Text style={styles.label}>Voucher</Text>
-                    <Text style={styles.value}>
-                        {voucher.taxNumber} - {voucher.requestCode}
-                    </Text>
-                </View>
+                        <View style={styles.infoContainer}>
+                            <Text style={styles.label}>Voucher</Text>
+                            <Text style={styles.value}>
+                                {voucher.taxNumber} - {voucher.requestCode}
+                            </Text>
+                        </View>
 
-                <View style={styles.bottomRow}>
-                    <View style={styles.priceContainer}>
-                        <Text style={styles.priceLabel}>Valor</Text>
-                        <Text style={styles.price}>{formatValue(voucher.value)}</Text>
-                    </View>
-                    <View style={styles.arrowContainer}>
-                        <ArrowUpRight />
-                    </View>
-                </View>
+                        <View style={styles.bottomRow}>
+                            <View style={styles.priceContainer}>
+                                <Text style={styles.priceLabel}>Valor</Text>
+                                <Text style={styles.price}>{formatValue(voucher.value)}</Text>
+                            </View>
+                            <View style={styles.arrowContainer}>
+                                <ArrowUpRight />
+                            </View>
+                        </View>
                     </LinearGradient>
                 </Animated.View>
             </TouchableOpacity>
@@ -244,4 +246,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default VoucherItem;
+export default React.memo(VoucherItem);

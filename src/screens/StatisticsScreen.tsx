@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions, StatusBar } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { useVouchers } from "../context/VoucherContext";
@@ -8,8 +8,7 @@ import MonthSelector from "../components/MonthSelector";
 import EarningsChart from "../components/EarningsChart";
 import PeriodSelector from "../components/PeriodSelector";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const { width } = Dimensions.get("window");
+import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
 
 const StatisticsScreen = () => {
     const {
@@ -18,6 +17,7 @@ const StatisticsScreen = () => {
         setCurrentMonthDate,
         categoryBreakdown,
         getMonthRangeLabel,
+        isLoading,
     } = useVouchers();
     const { discountPercentage } = useSettings();
 
@@ -117,17 +117,19 @@ const StatisticsScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar backgroundColor="#000" barStyle="light-content" />
+        <>
+            <FocusAwareStatusBar backgroundColor="#000" animated style="light" />
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header */}
-                <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
-                    <Text style={styles.headerTitle}>Estatísticas</Text>
-                    <Text style={styles.headerSubtitle}>Análise detalhada dos vouchers</Text>
-                </LinearGradient>
+                <SafeAreaView edges={["top"]}>
+                    {/* Header */}
+                    <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
+                        <Text style={styles.headerTitle}>Estatísticas</Text>
+                        <Text style={styles.headerSubtitle}>Análise detalhada dos vouchers</Text>
+                    </LinearGradient>
+                </SafeAreaView>
 
                 {/* Period Selector for Charts */}
                 <PeriodSelector
@@ -148,23 +150,36 @@ const StatisticsScreen = () => {
 
                 {/* Summary Cards Row */}
                 <View style={styles.summaryRow}>
-                    <LinearGradient
-                        colors={["#112599", "#3841ef"]}
-                        style={[styles.summaryCard, styles.summaryCardLeft]}
-                    >
-                        <Text style={styles.summaryCardTitle}>Faturamento</Text>
-                        <Text style={styles.summaryCardValue}>{formatCurrency(totalEarnings)}</Text>
-                    </LinearGradient>
+                    {isLoading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#112599" />
+                            <Text style={styles.loadingText}>Carregando estatísticas...</Text>
+                        </View>
+                    ) : (
+                        <>
+                            <LinearGradient
+                                colors={["#112599", "#3841ef"]}
+                                style={[styles.summaryCard, styles.summaryCardLeft]}
+                            >
+                                <Text style={styles.summaryCardTitle}>Faturamento</Text>
+                                <Text style={styles.summaryCardValue} numberOfLines={1}>
+                                    {formatCurrency(totalEarnings)}
+                                </Text>
+                            </LinearGradient>
 
-                    <LinearGradient
-                        colors={["#11998e", "#31de73"]}
-                        style={[styles.summaryCard, styles.summaryCardRight]}
-                    >
-                        <Text style={styles.summaryCardTitle}>Valor Líquido</Text>
-                        <Text style={styles.summaryCardValue}>
-                            {formatCurrency(totalEarnings - totalEarnings * discountPercentage)}
-                        </Text>
-                    </LinearGradient>
+                            <LinearGradient
+                                colors={["#11998e", "#31de73"]}
+                                style={[styles.summaryCard, styles.summaryCardRight]}
+                            >
+                                <Text style={styles.summaryCardTitle}>Valor Líquido</Text>
+                                <Text style={styles.summaryCardValue} numberOfLines={1}>
+                                    {formatCurrency(
+                                        totalEarnings - totalEarnings * discountPercentage
+                                    )}
+                                </Text>
+                            </LinearGradient>
+                        </>
+                    )}
                 </View>
 
                 {/* Category Analysis */}
@@ -174,52 +189,72 @@ const StatisticsScreen = () => {
                         <View style={styles.titleUnderline} />
                     </View>
 
-                    <View style={styles.categoryLegend}>
-                        {Object.entries(categoryBreakdown)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([category]) => (
-                                <View key={category} style={styles.legendItem}>
-                                    <LinearGradient
-                                        colors={[
-                                            getCategoryColor(category),
-                                            getCategoryLightColor(category),
-                                        ]}
-                                        style={styles.legendDot}
-                                    />
-                                    <Text style={styles.legendText}>
-                                        {getCategoryDescription(category)}
-                                    </Text>
-                                </View>
-                            ))}
-                    </View>
+                    {isLoading ? (
+                        <View style={styles.categoryLoadingContainer}>
+                            <ActivityIndicator size="large" color="#112599" />
+                            <Text style={styles.loadingText}>Carregando análise...</Text>
+                        </View>
+                    ) : Object.keys(categoryBreakdown).length > 0 ? (
+                        <>
+                            <View style={styles.categoryLegend}>
+                                {Object.entries(categoryBreakdown)
+                                    .sort(([, a], [, b]) => b - a)
+                                    .map(([category]) => (
+                                        <View key={category} style={styles.legendItem}>
+                                            <LinearGradient
+                                                colors={[
+                                                    getCategoryColor(category),
+                                                    getCategoryLightColor(category),
+                                                ]}
+                                                style={styles.legendDot}
+                                            />
+                                            <Text style={styles.legendText}>
+                                                {getCategoryDescription(category)}
+                                            </Text>
+                                        </View>
+                                    ))}
+                            </View>
 
-                    {/* Modern Bar Chart */}
-                    <View style={styles.barChart}>
-                        {Object.entries(categoryBreakdown)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([category, value]) => (
-                                <View key={category} style={styles.barContainer}>
-                                    <View style={styles.barHeader}>
-                                        <Text style={styles.barLabel}>{category}</Text>
-                                        <Text style={styles.barValue}>{formatCurrency(value)}</Text>
-                                    </View>
-                                    <View style={styles.barBackground}>
-                                        <LinearGradient
-                                            colors={[
-                                                getCategoryColor(category),
-                                                getCategoryLightColor(category),
-                                            ]}
-                                            style={[
-                                                styles.barFill,
-                                                { width: `${(value / totalValue) * 100}%` },
-                                            ]}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 0 }}
-                                        />
-                                    </View>
-                                </View>
-                            ))}
-                    </View>
+                            {/* Modern Bar Chart */}
+                            <View style={styles.barChart}>
+                                {Object.entries(categoryBreakdown)
+                                    .sort(([, a], [, b]) => b - a)
+                                    .map(([category, value]) => (
+                                        <View key={category} style={styles.barContainer}>
+                                            <View style={styles.barHeader}>
+                                                <Text style={styles.barLabel}>{category}</Text>
+                                                <Text style={styles.barValue}>
+                                                    {formatCurrency(value)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.barBackground}>
+                                                <LinearGradient
+                                                    colors={[
+                                                        getCategoryColor(category),
+                                                        getCategoryLightColor(category),
+                                                    ]}
+                                                    style={[
+                                                        styles.barFill,
+                                                        {
+                                                            width: `${(value / totalValue) * 100}%`,
+                                                        },
+                                                    ]}
+                                                    start={{ x: 0, y: 0 }}
+                                                    end={{ x: 1, y: 0 }}
+                                                />
+                                            </View>
+                                        </View>
+                                    ))}
+                            </View>
+                        </>
+                    ) : (
+                        <View style={styles.emptyStateContainer}>
+                            <Text style={styles.emptyStateText}>Nenhum dado disponível</Text>
+                            <Text style={styles.emptyStateSubtext}>
+                                Adicione vouchers para ver as estatísticas
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Detailed Statistics */}
@@ -262,7 +297,7 @@ const StatisticsScreen = () => {
                         ))}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </>
     );
 };
 
@@ -272,8 +307,8 @@ const styles = StyleSheet.create({
         backgroundColor: "#f8fafc",
     },
     headerGradient: {
-        paddingTop: SIZES.padding * 10,
-        marginTop: -SIZES.padding * 8.5,
+        paddingTop: SIZES.padding * 100,
+        marginTop: -SIZES.padding * 98.5,
         paddingBottom: SIZES.padding * 1.5,
         paddingHorizontal: SIZES.padding,
         borderBottomLeftRadius: 20,
@@ -315,7 +350,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         marginHorizontal: SIZES.padding,
         marginVertical: SIZES.padding,
-        gap: SIZES.base,
+        gap: 5,
     },
     summaryCard: {
         flex: 1,
@@ -344,7 +379,7 @@ const styles = StyleSheet.create({
     },
     summaryCardValue: {
         ...FONTS.bold,
-        fontSize: 20,
+        fontSize: 18,
         color: "#ffffff",
     },
     cardHeader: {
@@ -551,6 +586,50 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 2,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingVertical: SIZES.padding * 3,
+        backgroundColor: COLORS.white,
+        borderRadius: SIZES.radius * 2,
+        marginHorizontal: SIZES.padding,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    loadingText: {
+        ...FONTS.medium,
+        fontSize: SIZES.medium,
+        color: "#112599",
+        marginTop: SIZES.padding,
+        textAlign: "center",
+    },
+    categoryLoadingContainer: {
+        paddingVertical: SIZES.padding * 2,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyStateContainer: {
+        paddingVertical: SIZES.padding * 2,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyStateText: {
+        ...FONTS.medium,
+        fontSize: SIZES.medium,
+        color: "#2c3e50",
+        textAlign: "center",
+    },
+    emptyStateSubtext: {
+        ...FONTS.regular,
+        fontSize: SIZES.small,
+        color: "#8f92a1",
+        marginTop: SIZES.base,
+        textAlign: "center",
     },
 });
 

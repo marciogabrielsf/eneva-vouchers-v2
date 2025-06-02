@@ -37,16 +37,14 @@ const NavigationRouter = () => {
 
 export default function App() {
     return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <QueryClientProvider client={queryClient}>
-                <AuthProvider>
-                    <SettingsProvider>
-                        <NavigationContainer>
-                            <NavigationRouter />
-                        </NavigationContainer>
-                    </SettingsProvider>
-                </AuthProvider>
-            </QueryClientProvider>
-        </SafeAreaView>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <SettingsProvider>
+                    <NavigationContainer>
+                        <NavigationRouter />
+                    </NavigationContainer>
+                </SettingsProvider>
+            </AuthProvider>
+        </QueryClientProvider>
     );
 }

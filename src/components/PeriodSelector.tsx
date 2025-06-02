@@ -107,7 +107,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ startDate, endDate, onP
             </View>
 
             {/* Custom date selection */}
-            <View style={styles.customDateContainer}>
+            {/* <View style={styles.customDateContainer}>
                 <View style={styles.dateInputContainer}>
                     <Text style={styles.dateLabel}>Início:</Text>
                     <TouchableOpacity
@@ -127,7 +127,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({ startDate, endDate, onP
                         <Text style={styles.dateButtonText}>{formatDate(tempEndDate)}</Text>
                     </TouchableOpacity>
                 </View>
-            </View>
+            </View> */}
 
             {/* Date pickers */}
             {showStartPicker && (

@@ -29,7 +29,7 @@
     "react-native-gesture-handler": "^2.25.0",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-mask-input": "^1.2.3",
-    "react-native-reanimated": "^3.17.5",
+    "react-native-reanimated": "^3.18.0",
     "react-native-reanimated-carousel": "^4.0.2",
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "^4.10.0",

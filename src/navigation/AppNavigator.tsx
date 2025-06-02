@@ -74,8 +74,6 @@ const BottomTabNavigator = () => {
 };
 
 const AppNavigator = () => {
-    const { logout } = useAuth();
-
     return (
         <VoucherProvider>
             <Stack.Navigator

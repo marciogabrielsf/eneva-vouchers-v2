@@ -5,30 +5,27 @@ import {
     StyleSheet,
     TouchableOpacity,
     ScrollView,
-    Dimensions,
     useWindowDimensions,
-    StatusBar,
-    Animated,
+    ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { format, addMonths, subMonths, startOfDay, endOfDay } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { addMonths, startOfDay, endOfDay } from "date-fns";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { RootStackParamList } from "../types";
 import { useVouchers } from "../context/VoucherContext";
-import VoucherItem from "../components/VoucherItem";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import Carousel from "react-native-reanimated-carousel";
 import { LinearGradient } from "expo-linear-gradient";
+import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
-    const { vouchers, currentMonthDate } = useVouchers();
+    const { vouchers, currentMonthDate, isLoading } = useVouchers();
     const { discountPercentage, monthStartDay } = useSettings();
     const [activeSlide, setActiveSlide] = useState(0);
     const { width } = useWindowDimensions();
@@ -142,71 +139,103 @@ const HomeScreen = () => {
     ];
 
     return (
-        <View style={styles.container}>
-            <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
-                    <SafeAreaView style={styles.safeArea}>
-                        <StatusBar backgroundColor="#000" barStyle="light-content" />
-
-                        <View style={styles.header}>
-                            <View style={styles.greetingContainer}>
-                                <Text style={styles.greeting}>Olá,</Text>
-                                <Text style={styles.name}>Marcondes 👋</Text>
-                                <Text style={styles.subtitle}>Bem-vindo de volta</Text>
+        <>
+            <FocusAwareStatusBar backgroundColor="#000" animated style="light" />
+            <View style={styles.container}>
+                <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
+                        <SafeAreaView style={styles.safeArea}>
+                            <View style={styles.header}>
+                                <View style={styles.greetingContainer}>
+                                    <Text style={styles.greeting}>Olá,</Text>
+                                    <Text style={styles.name}>Marcondes 👋</Text>
+                                    <Text style={styles.subtitle}>Bem-vindo de volta</Text>
+                                </View>
+                                <TouchableOpacity style={styles.profileButton}>
+                                    <Icon
+                                        name="account-circle"
+                                        size={40}
+                                        color="rgba(255,255,255,0.9)"
+                                    />
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity style={styles.profileButton}>
-                                <Icon
-                                    name="account-circle"
-                                    size={40}
-                                    color="rgba(255,255,255,0.9)"
+                        </SafeAreaView>
+                    </LinearGradient>
+                    <View style={styles.carouselContainer}>
+                        {isLoading ? (
+                            <View style={styles.loadingCard}>
+                                <ActivityIndicator size="large" color="#112599" />
+                                <Text style={styles.loadingText}>Carregando seus vouchers...</Text>
+                            </View>
+                        ) : (
+                            <>
+                                <Carousel
+                                    loop={false}
+                                    width={width}
+                                    height={210}
+                                    data={carouselData}
+                                    scrollAnimationDuration={1000}
+                                    onSnapToItem={(index) => setActiveSlide(index)}
+                                    renderItem={({ item, index }) => (
+                                        <LinearGradient
+                                            colors={["#112599", "#3841ef"]}
+                                            style={styles.earningsCard}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                        >
+                                            <View style={styles.cardHeader}>
+                                                <Icon
+                                                    name="wallet"
+                                                    size={24}
+                                                    color="rgba(255,255,255,0.8)"
+                                                />
+                                                <Text style={styles.earningsLabel}>
+                                                    Você vai receber
+                                                </Text>
+                                            </View>
+                                            <Text style={styles.earningsValue}>
+                                                {formatCurrency(
+                                                    item.value - item.value * discountPercentage
+                                                )}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.earningsPeriod,
+                                                    { marginBottom: 20 },
+                                                    { fontSize: 14 },
+                                                ]}
+                                            >
+                                                {index === 0 && "Esse mês"}
+                                                {index === 1 && "No próximo mês"}
+                                                {index === 2 && "Daqui a dois meses"}
+                                            </Text>
+                                            <View style={styles.cardFooter}>
+                                                <Text style={styles.earningsPeriod}>
+                                                    {item.title}
+                                                </Text>
+                                                <Text style={styles.dateRange}>
+                                                    {item.dateRange}
+                                                </Text>
+                                            </View>
+                                        </LinearGradient>
+                                    )}
                                 />
-                            </TouchableOpacity>
-                        </View>
-                    </SafeAreaView>
-                </LinearGradient>
-                <View style={styles.carouselContainer}>
-                    <Carousel
-                        loop={false}
-                        width={width}
-                        height={180}
-                        data={carouselData}
-                        scrollAnimationDuration={1000}
-                        onSnapToItem={(index) => setActiveSlide(index)}
-                        renderItem={({ item, index }) => (
-                            <LinearGradient
-                                colors={["#112599", "#3841ef"]}
-                                style={styles.earningsCard}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                            >
-                                <View style={styles.cardHeader}>
-                                    <Icon name="wallet" size={24} color="rgba(255,255,255,0.8)" />
-                                    <Text style={styles.earningsLabel}>Você vai receber</Text>
+                                <View style={styles.indicators}>
+                                    {carouselData.map((_, index) => (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.indicator,
+                                                activeSlide === index && styles.activeIndicator,
+                                            ]}
+                                        />
+                                    ))}
                                 </View>
-                                <Text style={styles.earningsValue}>
-                                    {formatCurrency(item.value - item.value * discountPercentage)}
-                                </Text>
-                                <View style={styles.cardFooter}>
-                                    <Text style={styles.earningsPeriod}>{item.title}</Text>
-                                    <Text style={styles.dateRange}>{item.dateRange}</Text>
-                                </View>
-                            </LinearGradient>
+                            </>
                         )}
-                    />
-                    <View style={styles.indicators}>
-                        {carouselData.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.indicator,
-                                    activeSlide === index && styles.activeIndicator,
-                                ]}
-                            />
-                        ))}
                     </View>
-                </View>
 
-                {/* <View style={styles.quickActionsContainer}>
+                    {/* <View style={styles.quickActionsContainer}>
                     <TouchableOpacity
                         style={styles.actionCard}
                         onPress={() => navigation.navigate("Vouchers")}
@@ -236,44 +265,60 @@ const HomeScreen = () => {
                     </TouchableOpacity>
                 </View> */}
 
-                <View style={styles.recentContainer}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.recentTitle}>Últimos Registros</Text>
-                    </View>
+                    <View style={styles.recentContainer}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.recentTitle}>Últimos Registros</Text>
+                        </View>
 
-                    {recentVouchers.map((voucher) => (
-                        <TouchableOpacity
-                            key={voucher.id}
-                            style={styles.recentItem}
-                            onPress={() => navigateToVoucherDetails(voucher.id)}
-                        >
-                            <View style={styles.recentItemLeft}>
-                                <View style={styles.voucherIcon}>
-                                    <Icon name="receipt" size={20} color="#112599" />
-                                </View>
-                                <View>
-                                    <Text style={styles.recentItemTitle}>Voucher</Text>
-                                    <Text style={styles.recentItemSubtitle}>
-                                        {voucher.taxNumber}
-                                    </Text>
-                                </View>
+                        {isLoading ? (
+                            <View style={styles.recentLoadingContainer}>
+                                <ActivityIndicator size="large" color="#112599" />
+                                <Text style={styles.loadingText}>Carregando registros...</Text>
                             </View>
-                            <View style={styles.recentItemRight}>
-                                <Text style={styles.recentItemPrice}>
-                                    {formatCurrency(voucher.value)}
-                                </Text>
-                                <Text style={styles.recentItemDate}>
-                                    {formatPtBrDate(
-                                        new Date(voucher.date),
-                                        "dd 'de' MMMM 'de' yyyy"
-                                    )}
+                        ) : recentVouchers.length > 0 ? (
+                            recentVouchers.map((voucher) => (
+                                <TouchableOpacity
+                                    key={voucher.id}
+                                    style={styles.recentItem}
+                                    onPress={() => navigateToVoucherDetails(voucher.id)}
+                                >
+                                    <View style={styles.recentItemLeft}>
+                                        <View style={styles.voucherIcon}>
+                                            <Icon name="receipt" size={20} color="#112599" />
+                                        </View>
+                                        <View>
+                                            <Text style={styles.recentItemTitle}>Voucher</Text>
+                                            <Text style={styles.recentItemSubtitle}>
+                                                {voucher.taxNumber}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.recentItemRight}>
+                                        <Text style={styles.recentItemPrice}>
+                                            {formatCurrency(voucher.value)}
+                                        </Text>
+                                        <Text style={styles.recentItemDate}>
+                                            {formatPtBrDate(
+                                                new Date(voucher.date),
+                                                "dd 'de' MMMM 'de' yyyy"
+                                            )}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <View style={styles.emptyStateContainer}>
+                                <Icon name="receipt-text-outline" size={48} color="#8f92a1" />
+                                <Text style={styles.emptyStateText}>Nenhum voucher encontrado</Text>
+                                <Text style={styles.emptyStateSubtext}>
+                                    Seus registros aparecerão aqui
                                 </Text>
                             </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </ScrollView>
-        </View>
+                        )}
+                    </View>
+                </ScrollView>
+            </View>
+        </>
     );
 };
 
@@ -289,8 +334,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 8,
-        marginTop: -SIZES.padding * 3,
-        paddingTop: SIZES.padding * 3,
+        marginTop: -SIZES.padding * 100,
+        paddingTop: SIZES.padding * 100,
     },
     safeArea: {
         paddingHorizontal: SIZES.padding,
@@ -557,6 +602,53 @@ const styles = StyleSheet.create({
         fontSize: SIZES.small,
         color: "#8f92a1",
         marginTop: 2,
+    },
+    loadingCard: {
+        height: 210,
+        margin: SIZES.padding,
+        backgroundColor: COLORS.white,
+        borderRadius: SIZES.radius * 2,
+        justifyContent: "center",
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    loadingText: {
+        ...FONTS.medium,
+        fontSize: SIZES.medium,
+        color: "#112599",
+        marginTop: SIZES.padding,
+        textAlign: "center",
+    },
+    recentLoadingContainer: {
+        paddingVertical: SIZES.padding * 2,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    emptyStateContainer: {
+        paddingVertical: SIZES.padding * 3,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: COLORS.white,
+        borderRadius: SIZES.radius * 1.5,
+        marginTop: SIZES.padding,
+    },
+    emptyStateText: {
+        ...FONTS.medium,
+        fontSize: SIZES.medium,
+        color: "#2c3e50",
+        marginTop: SIZES.padding,
+        textAlign: "center",
+    },
+    emptyStateSubtext: {
+        ...FONTS.regular,
+        fontSize: SIZES.small,
+        color: "#8f92a1",
+        marginTop: SIZES.base,
+        textAlign: "center",
     },
 });
 

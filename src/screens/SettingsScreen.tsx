@@ -8,13 +8,13 @@ import {
     Alert,
     TextInput,
     Modal,
-    StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { useAuth } from "../context/AuthContext";
 import { useSettings } from "../context/SettingsContext";
+import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
 
 const SettingsScreen = () => {
     const { user, logout } = useAuth();
@@ -54,25 +54,31 @@ const SettingsScreen = () => {
         setMonthDayModalVisible(false);
     };
 
+    const userFirstAndSecondName = user?.name.split(" ").slice(0, 2).join(" ") || "Usuário";
+
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
-
-            <ScrollView>
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Configurações</Text>
-                </View>
-
-                <View style={styles.userSection}>
-                    <View style={styles.avatarPlaceholder}>
-                        <Text style={styles.avatarText}>{user?.firstName?.charAt(0) || "U"}</Text>
+        <>
+            <FocusAwareStatusBar backgroundColor={COLORS.background} animated style="dark" />
+            <SafeAreaView style={styles.container}>
+                <ScrollView>
+                    <View style={styles.header}>
+                        <Text style={styles.headerTitle}>Configurações</Text>
                     </View>
-                    <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{user?.name || "Usuário"}</Text>
-                        {/* <Text style={styles.userEmail}>{user?.email || "email@exemplo.com"}</Text> */}
+
+                    <View style={styles.userSection}>
+                        <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarText}>
+                                {user?.firstName?.charAt(0) || "U"}
+                            </Text>
+                        </View>
+                        <View style={styles.userInfo}>
+                            <Text style={styles.userName}>
+                                {userFirstAndSecondName || "Usuário"}
+                            </Text>
+                            {/* <Text style={styles.userEmail}>{user?.email || "email@exemplo.com"}</Text> */}
+                        </View>
                     </View>
-                </View>
-                {/* 
+                    {/* 
                 <View style={styles.settingsGroup}>
                     <Text style={styles.groupTitle}>Conta</Text>
 
@@ -95,129 +101,130 @@ const SettingsScreen = () => {
                     </TouchableOpacity>
                 </View> */}
 
-                <View style={styles.settingsGroup}>
-                    <Text style={styles.groupTitle}>Aplicativo</Text>
+                    <View style={styles.settingsGroup}>
+                        <Text style={styles.groupTitle}>Aplicativo</Text>
 
-                    <TouchableOpacity
-                        style={styles.settingItem}
-                        onPress={() => {
-                            setDiscountInputValue(discountPercentage.toString());
-                            setDiscountModalVisible(true);
-                        }}
-                    >
-                        <Icon name="percent" size={24} color={COLORS.black} />
-                        <Text style={styles.settingText}>Percentual de Desconto</Text>
-                        <Text style={styles.settingValue}>
-                            {(discountPercentage * 100).toFixed(0)}%
-                        </Text>
-                        <Icon name="chevron-right" size={24} color={COLORS.gray} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.settingItem}
-                        onPress={() => {
-                            setMonthDayInputValue(monthStartDay.toString());
-                            setMonthDayModalVisible(true);
-                        }}
-                    >
-                        <Icon name="calendar-month" size={24} color={COLORS.black} />
-                        <Text style={styles.settingText}>Dia de Início do Mês</Text>
-                        <Text style={styles.settingValue}>{monthStartDay}</Text>
-                        <Icon name="chevron-right" size={24} color={COLORS.gray} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
-                        <Icon name="logout" size={24} color={COLORS.red} />
-                        <Text style={[styles.settingText, { color: COLORS.red }]}>Sair</Text>
-                        <Icon name="chevron-right" size={24} color={COLORS.gray} />
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-
-            {/* Discount Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={discountModalVisible}
-                onRequestClose={() => setDiscountModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Percentual de Desconto</Text>
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.input}
-                                value={discountInputValue}
-                                onChangeText={setDiscountInputValue}
-                                keyboardType="decimal-pad"
-                                placeholder="0.15 (15%)"
-                            />
-                            <Text style={styles.inputHelp}>
-                                Digite um valor entre 0 e 1 (ex: 0.15 para 15%)
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => {
+                                setDiscountInputValue(discountPercentage.toString());
+                                setDiscountModalVisible(true);
+                            }}
+                        >
+                            <Icon name="percent" size={24} color={COLORS.black} />
+                            <Text style={styles.settingText}>Percentual de Desconto</Text>
+                            <Text style={styles.settingValue}>
+                                {(discountPercentage * 100).toFixed(0)}%
                             </Text>
-                        </View>
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => setDiscountModalVisible(false)}
-                            >
-                                <Text style={[styles.buttonText, { color: COLORS.black }]}>
-                                    Cancelar
+                            <Icon name="chevron-right" size={24} color={COLORS.gray} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.settingItem}
+                            onPress={() => {
+                                setMonthDayInputValue(monthStartDay.toString());
+                                setMonthDayModalVisible(true);
+                            }}
+                        >
+                            <Icon name="calendar-month" size={24} color={COLORS.black} />
+                            <Text style={styles.settingText}>Dia de Início do Mês</Text>
+                            <Text style={styles.settingValue}>{monthStartDay}</Text>
+                            <Icon name="chevron-right" size={24} color={COLORS.gray} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+                            <Icon name="logout" size={24} color={COLORS.red} />
+                            <Text style={[styles.settingText, { color: COLORS.red }]}>Sair</Text>
+                            <Icon name="chevron-right" size={24} color={COLORS.gray} />
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+
+                {/* Discount Modal */}
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={discountModalVisible}
+                    onRequestClose={() => setDiscountModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Percentual de Desconto</Text>
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    value={discountInputValue}
+                                    onChangeText={setDiscountInputValue}
+                                    keyboardType="decimal-pad"
+                                    placeholder="0.15 (15%)"
+                                />
+                                <Text style={styles.inputHelp}>
+                                    Digite um valor entre 0 e 1 (ex: 0.15 para 15%)
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.saveButton]}
-                                onPress={handleSaveDiscount}
-                            >
-                                <Text style={styles.buttonText}>Salvar</Text>
-                            </TouchableOpacity>
+                            </View>
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.cancelButton]}
+                                    onPress={() => setDiscountModalVisible(false)}
+                                >
+                                    <Text style={[styles.buttonText, { color: COLORS.black }]}>
+                                        Cancelar
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.saveButton]}
+                                    onPress={handleSaveDiscount}
+                                >
+                                    <Text style={styles.buttonText}>Salvar</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
+                </Modal>
 
-            {/* Month Day Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={monthDayModalVisible}
-                onRequestClose={() => setMonthDayModalVisible(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Dia de Início do Mês</Text>
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.input}
-                                value={monthDayInputValue}
-                                onChangeText={setMonthDayInputValue}
-                                keyboardType="number-pad"
-                                placeholder="1-31"
-                            />
-                            <Text style={styles.inputHelp}>
-                                Digite um dia entre 1 e 31 para definir como início do mês
-                            </Text>
-                        </View>
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => setMonthDayModalVisible(false)}
-                            >
-                                <Text style={[styles.buttonText, { color: COLORS.black }]}>
-                                    Cancelar
+                {/* Month Day Modal */}
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={monthDayModalVisible}
+                    onRequestClose={() => setMonthDayModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Dia de Início do Mês</Text>
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    value={monthDayInputValue}
+                                    onChangeText={setMonthDayInputValue}
+                                    keyboardType="number-pad"
+                                    placeholder="1-31"
+                                />
+                                <Text style={styles.inputHelp}>
+                                    Digite um dia entre 1 e 31 para definir como início do mês
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.modalButton, styles.saveButton]}
-                                onPress={handleSaveMonthStartDay}
-                            >
-                                <Text style={styles.buttonText}>Salvar</Text>
-                            </TouchableOpacity>
+                            </View>
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.cancelButton]}
+                                    onPress={() => setMonthDayModalVisible(false)}
+                                >
+                                    <Text style={[styles.buttonText, { color: COLORS.black }]}>
+                                        Cancelar
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.saveButton]}
+                                    onPress={handleSaveMonthStartDay}
+                                >
+                                    <Text style={styles.buttonText}>Salvar</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
-        </SafeAreaView>
+                </Modal>
+            </SafeAreaView>
+        </>
     );
 };
 

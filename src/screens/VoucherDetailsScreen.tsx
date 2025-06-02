@@ -17,6 +17,7 @@ import { COLORS, FONTS, SIZES } from "../theme";
 import { RootStackParamList, Voucher } from "../types";
 import { useVouchers } from "../context/VoucherContext";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
 
 type VoucherDetailsRouteProp = RouteProp<RootStackParamList, "VoucherDetails">;
 type VoucherDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -114,72 +115,76 @@ const VoucherDetailsScreen = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView>
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Detalhes do Voucher</Text>
-                    <Text style={styles.headerCategory}>
-                        {getCategoryName(voucher.requestCode)}
-                    </Text>
-                </View>
+        <>
+            <FocusAwareStatusBar backgroundColor="#000" style="light" />
 
-                <View style={styles.card}>
-                    <View style={styles.row}>
-                        <View style={styles.infoItem}>
-                            <Text style={styles.label}>Número Fiscal</Text>
-                            <Text style={styles.value}>{voucher.taxNumber}</Text>
+            <SafeAreaView style={styles.container}>
+                <ScrollView>
+                    <View style={styles.header}>
+                        <Text style={styles.headerTitle}>Detalhes do Voucher</Text>
+                        <Text style={styles.headerCategory}>
+                            {getCategoryName(voucher.requestCode)}
+                        </Text>
+                    </View>
+
+                    <View style={styles.card}>
+                        <View style={styles.row}>
+                            <View style={styles.infoItem}>
+                                <Text style={styles.label}>Número Fiscal</Text>
+                                <Text style={styles.value}>{voucher.taxNumber}</Text>
+                            </View>
+                            <View style={styles.infoItem}>
+                                <Text style={styles.label}>Código de Solicitação</Text>
+                                <Text style={styles.value}>{voucher.requestCode}</Text>
+                            </View>
                         </View>
-                        <View style={styles.infoItem}>
-                            <Text style={styles.label}>Código de Solicitação</Text>
-                            <Text style={styles.value}>{voucher.requestCode}</Text>
+
+                        <View style={styles.row}>
+                            <View style={styles.infoItem}>
+                                <Text style={styles.label}>Data</Text>
+                                <Text style={styles.value}>
+                                    {format(new Date(voucher.date), "dd/MM/yyyy")}
+                                </Text>
+                            </View>
+                            <View style={styles.infoItem}>
+                                <Text style={styles.label}>Valor</Text>
+                                <Text style={styles.valueHighlight}>
+                                    {formatCurrency(voucher.value)}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.locationSection}>
+                            <Text style={styles.label}>Local de Origem</Text>
+                            <Text style={styles.locationText}>{voucher.start}</Text>
+                        </View>
+
+                        <View style={styles.locationSection}>
+                            <Text style={styles.label}>Destino</Text>
+                            <Text style={styles.locationText}>{voucher.destination}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.row}>
-                        <View style={styles.infoItem}>
-                            <Text style={styles.label}>Data</Text>
-                            <Text style={styles.value}>
-                                {format(new Date(voucher.date), "dd/MM/yyyy")}
-                            </Text>
-                        </View>
-                        <View style={styles.infoItem}>
-                            <Text style={styles.label}>Valor</Text>
-                            <Text style={styles.valueHighlight}>
-                                {formatCurrency(voucher.value)}
-                            </Text>
-                        </View>
+                    <View style={styles.actionButtons}>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.editButton]}
+                            onPress={handleEdit}
+                        >
+                            <Icon name="pencil" size={20} color={COLORS.white} />
+                            <Text style={styles.actionButtonText}>Editar</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.deleteButton]}
+                            onPress={handleDelete}
+                        >
+                            <Icon name="delete" size={20} color={COLORS.white} />
+                            <Text style={styles.actionButtonText}>Excluir</Text>
+                        </TouchableOpacity>
                     </View>
-
-                    <View style={styles.locationSection}>
-                        <Text style={styles.label}>Local de Origem</Text>
-                        <Text style={styles.locationText}>{voucher.start}</Text>
-                    </View>
-
-                    <View style={styles.locationSection}>
-                        <Text style={styles.label}>Destino</Text>
-                        <Text style={styles.locationText}>{voucher.destination}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.actionButtons}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.editButton]}
-                        onPress={handleEdit}
-                    >
-                        <Icon name="pencil" size={20} color={COLORS.white} />
-                        <Text style={styles.actionButtonText}>Editar</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.deleteButton]}
-                        onPress={handleDelete}
-                    >
-                        <Icon name="delete" size={20} color={COLORS.white} />
-                        <Text style={styles.actionButtonText}>Excluir</Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </SafeAreaView>
+                </ScrollView>
+            </SafeAreaView>
+        </>
     );
 };
 
