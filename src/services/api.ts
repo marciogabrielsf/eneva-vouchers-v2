@@ -22,9 +22,40 @@ api.interceptors.request.use(
         } catch (error) {
             console.error("Error getting token:", error);
         }
+
+        // Log the request
+        console.log(
+            `📤 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+            {
+                data: config.data,
+            }
+        );
+
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+// Interceptor to log responses
+api.interceptors.response.use(
+    (response) => {
+        console.log(
+            `📥 API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`,
+            {
+                status: response.status,
+                data: response.data,
+            }
+        );
+        return response;
+    },
+    (error) => {
+        console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+        });
+        return Promise.reject(error);
+    }
 );
 
 export default api;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -11,60 +11,60 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { addMonths, startOfDay, endOfDay } from "date-fns";
 import { COLORS, FONTS, SIZES } from "../theme";
-import { RootStackParamList } from "../types";
+import { RootStackParamList, Voucher, HomeSummaryPeriod } from "../types";
 import { useVouchers } from "../context/VoucherContext";
+import { useExpenses } from "../context/ExpenseContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import Carousel from "react-native-reanimated-carousel";
 import { LinearGradient } from "expo-linear-gradient";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
+import voucherService from "../services/voucherService";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
-    const { vouchers, currentMonthDate, isLoading } = useVouchers();
+    const { isLoading: vouchersLoading } = useVouchers();
+    const { expenses, totalExpenses } = useExpenses();
     const { discountPercentage, monthStartDay } = useSettings();
     const [activeSlide, setActiveSlide] = useState(0);
+    const [recentVouchers, setRecentVouchers] = useState<Voucher[]>([]);
+    const [homePeriods, setHomePeriods] = useState<HomeSummaryPeriod[]>([]);
+    const [loadingHomeSummary, setLoadingHomeSummary] = useState(false);
     const { width } = useWindowDimensions();
 
-    const actualDate = new Date();
+    // Load home summary (periods + recent vouchers) from server
+    useEffect(() => {
+        const loadHomeSummary = async () => {
+            setLoadingHomeSummary(true);
+            try {
+                const summary = await voucherService.getHomeSummary(monthStartDay);
+                setHomePeriods(summary.periods);
+                setRecentVouchers(summary.recentVouchers);
+            } catch (error) {
+                console.error("Error loading home summary:", error);
+                // Fallback to empty data
+                setHomePeriods([]);
+                setRecentVouchers([]);
+            } finally {
+                setLoadingHomeSummary(false);
+            }
+        };
 
-    // Helper function to get custom month date range based on monthStartDay
-    const getCustomMonthDateRange = (baseDate: Date, monthsOffset: number) => {
-        const year = baseDate.getFullYear();
-        const month = baseDate.getMonth() + monthsOffset;
+        loadHomeSummary();
+    }, [monthStartDay]); // Reload when monthStartDay changes
 
-        // Create start date based on monthStartDay
-        const startDate = startOfDay(new Date(year, month, monthStartDay));
-
-        // End date is one day before the start date of the next month
-        const endDate = endOfDay(new Date(year, month + 1, monthStartDay));
-        endDate.setDate(endDate.getDate() - 1);
-
-        return { startDate, endDate };
+    // Helper for date formatting with proper capitalization
+    const formatPtBrDate = (date: Date, formatString: string) => {
+        return date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "utc",
+        });
     };
-
-    // Filter vouchers for each month period
-    const firstMonthVouchers = vouchers.filter((voucher) => {
-        const voucherDate = new Date(voucher.date);
-        const { startDate, endDate } = getCustomMonthDateRange(actualDate, -2);
-        return voucherDate >= startDate && voucherDate <= endDate;
-    });
-
-    const secondMonthVouchers = vouchers.filter((voucher) => {
-        const voucherDate = new Date(voucher.date);
-        const { startDate, endDate } = getCustomMonthDateRange(actualDate, -1);
-        return voucherDate >= startDate && voucherDate <= endDate;
-    });
-
-    const thirdMonthVouchers = vouchers.filter((voucher) => {
-        const voucherDate = new Date(voucher.date);
-        const { startDate, endDate } = getCustomMonthDateRange(actualDate, 0);
-        return voucherDate >= startDate && voucherDate <= endDate;
-    });
 
     const formatCurrency = (value: number) => {
         return value.toLocaleString("pt-BR", {
@@ -77,66 +77,14 @@ const HomeScreen = () => {
         navigation.navigate("VoucherDetails", { id });
     };
 
-    const recentVouchers = vouchers
-        .slice(-5)
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Show just the last 5 vouchers on home screen
-
-    // Helper for date formatting with proper capitalization
-    const formatPtBrDate = (date: Date, formatString: string) => {
-        return date.toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            timeZone: "utc",
-        });
-    };
-
-    // Helper function to get a label for each month period
-    const getMonthLabel = (date: Date, monthsToAdd: number) => {
-        const periodDate = addMonths(date, monthsToAdd);
-
-        if (monthsToAdd === 0) {
-            return "Este mês";
-        } else if (monthsToAdd === 1) {
-            return "Próximo mês";
-        } else {
-            return `Daqui a ${monthsToAdd} meses`;
-        }
-    };
-
-    // Format date range for display
-    const formatDateRange = (offsetMonths: number) => {
-        const { startDate, endDate } = getCustomMonthDateRange(actualDate, offsetMonths);
-        return `${formatPtBrDate(startDate, "dd 'de' MMM")} - ${formatPtBrDate(
-            endDate,
-            "dd 'de' MMM"
-        )}`;
-    };
-
-    // Helper function for projected earnings - just an example
-    const getProjectedEarnings = (baseEarnings: number, monthsAhead: number) => {
-        // This is a simple projection example - you might want to implement a more sophisticated model
-        const growthFactor = 1 + 0.1 * monthsAhead;
-        return baseEarnings * growthFactor;
-    };
-
-    const carouselData = [
-        {
-            title: "Referente aos vouchers de",
-            dateRange: formatDateRange(-2),
-            value: firstMonthVouchers.reduce((acc, voucher) => acc + voucher.value, 0),
-        },
-        {
-            title: "Referente aos vouchers de",
-            dateRange: formatDateRange(-1),
-            value: secondMonthVouchers.reduce((acc, voucher) => acc + voucher.value, 0),
-        },
-        {
-            title: "Referente aos vouchers de",
-            dateRange: formatDateRange(0),
-            value: thirdMonthVouchers.reduce((acc, voucher) => acc + voucher.value, 0),
-        },
-    ];
+    // Create carousel data from server response
+    const carouselData = homePeriods.map((period, index) => ({
+        title: period.title,
+        dateRange: period.dateRange,
+        value: period.value,
+        displayText:
+            index === 0 ? "Esse mês" : index === 1 ? "No próximo mês" : "Daqui a dois meses",
+    }));
 
     return (
         <>
@@ -162,7 +110,7 @@ const HomeScreen = () => {
                         </SafeAreaView>
                     </LinearGradient>
                     <View style={styles.carouselContainer}>
-                        {isLoading ? (
+                        {loadingHomeSummary ? (
                             <View style={styles.loadingCard}>
                                 <ActivityIndicator size="large" color="#112599" />
                                 <Text style={styles.loadingText}>Carregando seus vouchers...</Text>
@@ -205,9 +153,7 @@ const HomeScreen = () => {
                                                     { fontSize: 14 },
                                                 ]}
                                             >
-                                                {index === 0 && "Esse mês"}
-                                                {index === 1 && "No próximo mês"}
-                                                {index === 2 && "Daqui a dois meses"}
+                                                {item.displayText}
                                             </Text>
                                             <View style={styles.cardFooter}>
                                                 <Text style={styles.earningsPeriod}>
@@ -235,42 +181,12 @@ const HomeScreen = () => {
                         )}
                     </View>
 
-                    {/* <View style={styles.quickActionsContainer}>
-                    <TouchableOpacity
-                        style={styles.actionCard}
-                        onPress={() => navigation.navigate("Vouchers")}
-                    >
-                        <LinearGradient
-                            colors={["#112599", "#3841ef"]}
-                            style={styles.actionGradient}
-                        >
-                            <Icon name="receipt" size={28} color="white" />
-                            <Text style={styles.actionTitle}>Vouchers</Text>
-                            <Text style={styles.actionSubtitle}>Gerencie seus recebimentos</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.actionCard}
-                        onPress={() => navigation.navigate("Statistics")}
-                    >
-                        <LinearGradient
-                            colors={["#11998e", "#31de73"]}
-                            style={styles.actionGradient}
-                        >
-                            <Icon name="chart-line" size={28} color="white" />
-                            <Text style={styles.actionTitle}>Estatísticas</Text>
-                            <Text style={styles.actionSubtitle}>Análises e relatórios</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View> */}
-
                     <View style={styles.recentContainer}>
                         <View style={styles.sectionHeader}>
                             <Text style={styles.recentTitle}>Últimos Registros</Text>
                         </View>
 
-                        {isLoading ? (
+                        {loadingHomeSummary ? (
                             <View style={styles.recentLoadingContainer}>
                                 <ActivityIndicator size="large" color="#112599" />
                                 <Text style={styles.loadingText}>Carregando registros...</Text>
@@ -454,12 +370,14 @@ const styles = StyleSheet.create({
     },
     quickActionsContainer: {
         flexDirection: "row",
+        flexWrap: "wrap",
         paddingHorizontal: SIZES.padding,
         marginBottom: SIZES.padding * 2,
-        gap: SIZES.padding,
+        gap: SIZES.padding / 2,
     },
     actionCard: {
         flex: 1,
+        maxWidth: "31%", // Para comportar 3 cards por linha
         borderRadius: SIZES.radius * 1.5,
         overflow: "hidden",
         shadowColor: "#000",
@@ -469,23 +387,23 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     actionGradient: {
-        padding: SIZES.padding * 1.5,
+        padding: SIZES.padding,
         alignItems: "center",
-        minHeight: 120,
+        minHeight: 100,
         justifyContent: "center",
     },
     actionTitle: {
         ...FONTS.bold,
-        fontSize: SIZES.medium,
+        fontSize: SIZES.small,
         color: "white",
-        marginTop: SIZES.base,
+        marginTop: SIZES.base / 2,
         textAlign: "center",
     },
     actionSubtitle: {
         ...FONTS.regular,
         fontSize: SIZES.small,
         color: "rgba(255,255,255,0.8)",
-        marginTop: 4,
+        marginTop: 2,
         textAlign: "center",
     },
     menuContainer: {

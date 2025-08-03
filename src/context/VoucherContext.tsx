@@ -81,7 +81,7 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Get a human-readable label for the current custom month range
     const getMonthRangeLabel = () => {
         const { startDate, endDate } = getCustomMonthDateRange(currentMonthDate, monthStartDay);
-        const formatOptions = { month: "short", day: "numeric" };
+        const formatOptions: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
         return `${startDate.toLocaleDateString(
             "pt-BR",
             formatOptions
@@ -119,7 +119,19 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
             setError(null);
 
             try {
-                const response = await voucherService.getVouchers();
+                const { startDate, endDate } = getCustomMonthDateRange(
+                    currentMonthDate,
+                    monthStartDay
+                );
+
+                const filters = {
+                    from: format(startDate, "yyyy-MM-dd"),
+                    to: format(endDate, "yyyy-MM-dd"),
+                    offset: 0,
+                    // Don't set limit to get all vouchers for the period (uses server default)
+                };
+
+                const response = await voucherService.getVouchers(filters);
 
                 const vouchers = response.map((voucher) => {
                     return {
@@ -146,7 +158,7 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
         // This will use the most recent version of loadVouchers
         // but won't re-run when loadVouchers changes
         loadVouchers();
-    }, [monthStartDay]); // Add monthStartDay as dependency
+    }, [monthStartDay, currentMonthDate]); // Add currentMonthDate as dependency to reload when month changes
 
     const addVoucher = async (voucherData: Omit<Voucher, "id">) => {
         setIsLoading(true);
@@ -190,7 +202,7 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
 
         try {
             // Format date to string if it's a Date object
-            const formattedData = { ...voucherData };
+            const formattedData: any = { ...voucherData };
             if (
                 formattedData.date &&
                 typeof formattedData.date === "object" &&
@@ -202,7 +214,7 @@ export const VoucherProvider: React.FC<{ children: ReactNode }> = ({ children })
 
             // Format value to string if it's a number
             if (formattedData.value && typeof formattedData.value === "number") {
-                formattedData.value = formattedData.value.toString().replace(".", ",");
+                (formattedData as any).value = formattedData.value.toString().replace(".", ",");
             }
 
             await voucherService.updateVoucher(id, formattedData);

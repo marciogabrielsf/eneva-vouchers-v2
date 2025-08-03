@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { RootStackParamList, BottomTabParamList } from "../types";
 import HomeScreen from "../screens/HomeScreen";
 import VouchersScreen from "../screens/VouchersScreen";
+import ExpensesScreen from "../screens/ExpensesScreen";
 
 import { COLORS } from "../theme";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -11,8 +12,10 @@ import StatisticsScreen from "../screens/StatisticsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import VoucherFormScreen from "../screens/VoucherFormScreen";
 import VoucherDetailsScreen from "../screens/VoucherDetailsScreen";
-import { useAuth } from "../context/AuthContext";
+import ExpenseFormScreen from "../screens/ExpenseFormScreen";
+import ExpenseDetailsScreen from "../screens/ExpenseDetailsScreen";
 import { VoucherProvider } from "../context/VoucherContext";
+import { ExpenseProvider } from "../context/ExpenseContext";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -52,6 +55,16 @@ const BottomTabNavigator = () => {
                 }}
             />
             <Tab.Screen
+                name="ExpensesTab"
+                component={ExpensesScreen}
+                options={{
+                    tabBarLabel: "Despesas",
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name="credit-card-outline" color={color} size={size} />
+                    ),
+                }}
+            />
+            <Tab.Screen
                 name="StatisticsTab"
                 component={StatisticsScreen}
                 options={{
@@ -76,50 +89,69 @@ const BottomTabNavigator = () => {
 const AppNavigator = () => {
     return (
         <VoucherProvider>
-            <Stack.Navigator
-                screenOptions={{
-                    headerStyle: {
-                        backgroundColor: COLORS.white,
-                    },
-                    headerTintColor: COLORS.black,
-                    headerTitleStyle: {
-                        fontWeight: "bold",
-                    },
-                    contentStyle: {
-                        backgroundColor: COLORS.background,
-                    },
-                }}
-            >
-                <Stack.Screen
-                    name="Home"
-                    component={BottomTabNavigator}
-                    options={{
-                        headerShown: false,
+            <ExpenseProvider>
+                <Stack.Navigator
+                    screenOptions={{
+                        headerStyle: {
+                            backgroundColor: COLORS.white,
+                        },
+                        headerTintColor: COLORS.black,
+                        headerTitleStyle: {
+                            fontWeight: "bold",
+                        },
+                        contentStyle: {
+                            backgroundColor: COLORS.background,
+                        },
                     }}
-                />
-                <Stack.Screen
-                    name="Vouchers"
-                    component={VouchersScreen}
-                    options={{ title: "Vouchers" }}
-                />
-                <Stack.Screen
-                    name="Statistics"
-                    component={StatisticsScreen}
-                    options={{ title: "Estatísticas" }}
-                />
-                <Stack.Screen
-                    name="VoucherForm"
-                    component={VoucherFormScreen}
-                    options={({ route }) => ({
-                        title: route.params?.voucher ? "Editar Voucher" : "Adicionar Voucher",
-                    })}
-                />
-                <Stack.Screen
-                    name="VoucherDetails"
-                    component={VoucherDetailsScreen}
-                    options={{ title: "Detalhes do Voucher" }}
-                />
-            </Stack.Navigator>
+                >
+                    <Stack.Screen
+                        name="Home"
+                        component={BottomTabNavigator}
+                        options={{
+                            headerShown: false,
+                        }}
+                    />
+                    <Stack.Screen
+                        name="Vouchers"
+                        component={VouchersScreen}
+                        options={{ title: "Vouchers" }}
+                    />
+                    <Stack.Screen
+                        name="Expenses"
+                        component={ExpensesScreen}
+                        options={{ title: "Despesas" }}
+                    />
+                    <Stack.Screen
+                        name="Statistics"
+                        component={StatisticsScreen}
+                        options={{ title: "Estatísticas" }}
+                    />
+                    <Stack.Screen
+                        name="VoucherForm"
+                        component={VoucherFormScreen}
+                        options={({ route }) => ({
+                            title: route.params?.voucher ? "Editar Voucher" : "Adicionar Voucher",
+                        })}
+                    />
+                    <Stack.Screen
+                        name="VoucherDetails"
+                        component={VoucherDetailsScreen}
+                        options={{ title: "Detalhes do Voucher" }}
+                    />
+                    <Stack.Screen
+                        name="ExpenseForm"
+                        component={ExpenseFormScreen}
+                        options={({ route }) => ({
+                            title: route.params?.expense ? "Editar Despesa" : "Adicionar Despesa",
+                        })}
+                    />
+                    <Stack.Screen
+                        name="ExpenseDetails"
+                        component={ExpenseDetailsScreen}
+                        options={{ title: "Detalhes da Despesa" }}
+                    />
+                </Stack.Navigator>
+            </ExpenseProvider>
         </VoucherProvider>
     );
 };
