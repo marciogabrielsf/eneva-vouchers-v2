@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, FONTS, SIZES } from "../theme";
@@ -9,6 +9,7 @@ import EarningsChart from "../components/EarningsChart";
 import PeriodSelector from "../components/PeriodSelector";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
+import { formatCurrency } from "../utils/formatters";
 
 const StatisticsScreen = () => {
     const {
@@ -31,21 +32,17 @@ const StatisticsScreen = () => {
         return new Date(today.getFullYear(), today.getMonth() + 1, 0);
     });
 
-    const handleMonthChange = (date: Date) => {
-        setCurrentMonthDate(date);
-    };
+    const handleMonthChange = useCallback(
+        (date: Date) => {
+            setCurrentMonthDate(date);
+        },
+        [setCurrentMonthDate]
+    );
 
-    const handleChartPeriodChange = (startDate: Date, endDate: Date) => {
+    const handleChartPeriodChange = useCallback((startDate: Date, endDate: Date) => {
         setChartStartDate(startDate);
         setChartEndDate(endDate);
-    };
-
-    const formatCurrency = (value: number) => {
-        return value.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        });
-    };
+    }, []);
 
     // Calculate total for all categories
     const totalValue = Object.values(categoryBreakdown).reduce((sum, val) => sum + val, 0);

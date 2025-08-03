@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -18,6 +18,8 @@ import { RootStackParamList, Voucher } from "../types";
 import { useVouchers } from "../context/VoucherContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
+import { formatCurrency } from "../utils/formatters";
+import { useLoadingState } from "../hooks/common";
 
 type VoucherDetailsRouteProp = RouteProp<RootStackParamList, "VoucherDetails">;
 type VoucherDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -27,7 +29,7 @@ const VoucherDetailsScreen = () => {
     const route = useRoute<VoucherDetailsRouteProp>();
     const { getVoucherById, deleteVoucher, isLoading, error } = useVouchers();
     const [voucher, setVoucher] = useState<Voucher | undefined>(undefined);
-    const [deleting, setDeleting] = useState(false);
+    const { isLoading: deleting, setLoadingState: setDeleting } = useLoadingState();
 
     const { id } = route.params;
 
@@ -42,15 +44,15 @@ const VoucherDetailsScreen = () => {
             Alert.alert("Erro", error);
             setDeleting(false);
         }
-    }, [error, deleting]);
+    }, [error, deleting, setDeleting]);
 
-    const handleEdit = () => {
+    const handleEdit = useCallback(() => {
         if (voucher) {
             navigation.navigate("VoucherForm", { voucher });
         }
-    };
+    }, [voucher, navigation]);
 
-    const handleDelete = () => {
+    const handleDelete = useCallback(() => {
         Alert.alert("Excluir Voucher", "Tem certeza que deseja excluir este voucher?", [
             { text: "Cancelar", style: "cancel" },
             {
@@ -69,16 +71,9 @@ const VoucherDetailsScreen = () => {
                 },
             },
         ]);
-    };
+    }, [voucher, setDeleting, deleteVoucher, navigation]);
 
-    const formatCurrency = (value: number) => {
-        return value.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        });
-    };
-
-    const getCategoryName = (code: string) => {
+    const getCategoryName = useCallback((code: string) => {
         const category = code.substring(0, 3);
         switch (category) {
             case "MAN":
@@ -90,7 +85,7 @@ const VoucherDetailsScreen = () => {
             default:
                 return category;
         }
-    };
+    }, []);
 
     if (isLoading || deleting) {
         return (

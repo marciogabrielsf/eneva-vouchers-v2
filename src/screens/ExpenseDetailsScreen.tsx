@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -17,6 +17,8 @@ import { RootStackParamList, Expense, ExpenseCategory } from "../types";
 import { useExpenses } from "../context/ExpenseContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
+import { formatCurrency } from "../utils/formatters";
+import { useLoadingState } from "../hooks/common";
 
 type ExpenseDetailsRouteProp = RouteProp<RootStackParamList, "ExpenseDetails">;
 type ExpenseDetailsNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -26,7 +28,7 @@ const ExpenseDetailsScreen = () => {
     const route = useRoute<ExpenseDetailsRouteProp>();
     const { getExpenseById, deleteExpense, isLoading, error } = useExpenses();
     const [expense, setExpense] = useState<Expense | undefined>(undefined);
-    const [deleting, setDeleting] = useState(false);
+    const { isLoading: deleting, setLoadingState: setDeleting } = useLoadingState();
 
     const { id } = route.params;
 
@@ -41,15 +43,15 @@ const ExpenseDetailsScreen = () => {
             Alert.alert("Erro", error);
             setDeleting(false);
         }
-    }, [error, deleting]);
+    }, [error, deleting, setDeleting]);
 
-    const handleEdit = () => {
+    const handleEdit = useCallback(() => {
         if (expense) {
             navigation.navigate("ExpenseForm", { expense });
         }
-    };
+    }, [expense, navigation]);
 
-    const handleDelete = () => {
+    const handleDelete = useCallback(() => {
         Alert.alert("Excluir Despesa", "Tem certeza que deseja excluir esta despesa?", [
             { text: "Cancelar", style: "cancel" },
             {
@@ -68,16 +70,9 @@ const ExpenseDetailsScreen = () => {
                 },
             },
         ]);
-    };
+    }, [expense, setDeleting, deleteExpense, navigation]);
 
-    const formatCurrency = (value: number) => {
-        return value.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        });
-    };
-
-    const getCategoryName = (category: ExpenseCategory) => {
+    const getCategoryName = useCallback((category: ExpenseCategory) => {
         const categoryNames: Record<ExpenseCategory, string> = {
             [ExpenseCategory.FOOD]: "Alimentação",
             [ExpenseCategory.TRANSPORT]: "Transporte",
@@ -90,9 +85,9 @@ const ExpenseDetailsScreen = () => {
             [ExpenseCategory.OTHER]: "Outros",
         };
         return categoryNames[category] || category;
-    };
+    }, []);
 
-    const getCategoryColor = (category: ExpenseCategory) => {
+    const getCategoryColor = useCallback((category: ExpenseCategory) => {
         const categoryColors: Record<ExpenseCategory, string> = {
             [ExpenseCategory.FOOD]: "#FF6B6B",
             [ExpenseCategory.TRANSPORT]: "#4ECDC4",
@@ -105,7 +100,7 @@ const ExpenseDetailsScreen = () => {
             [ExpenseCategory.OTHER]: "#BDC3C7",
         };
         return categoryColors[category] || "#BDC3C7";
-    };
+    }, []);
 
     if (isLoading || deleting) {
         return (

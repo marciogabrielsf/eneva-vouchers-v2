@@ -1,13 +1,12 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
     ActivityIndicator,
-    Animated,
     RefreshControl,
-    Dimensions,
+    Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -20,6 +19,8 @@ import AddButton from "../components/AddButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
+import { useLoadingState, useScreenAnimation } from "../hooks/common";
+import { formatCurrency } from "../utils/formatters";
 
 type ExpenseScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -31,29 +32,12 @@ const ExpensesScreen = () => {
         setCurrentMonthDate,
         totalExpenses,
         isLoading,
-        error,
         loadExpenses,
         getMonthRangeLabel,
     } = useExpenses();
 
-    // Animation values
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
-    const [refreshing, setRefreshing] = useState(false);
-
-    // Use a ref to track if initial data has been loaded to prevent multiple loads
-    const initialLoadDone = useRef(false);
-
-    // Instead of using useFocusEffect, use a regular useEffect with an isMounted ref
-    // to ensure we don't make API calls after component unmounts
-    const isMounted = useRef(true);
-
-    useEffect(() => {
-        return () => {
-            // Clean up when component unmounts
-            isMounted.current = false;
-        };
-    }, []);
+    const { refreshing, setRefreshingState, initialLoadDone } = useLoadingState();
+    const { animatedStyle, startAnimation } = useScreenAnimation();
 
     // Load data once when component mounts
     useEffect(() => {
@@ -62,44 +46,38 @@ const ExpensesScreen = () => {
             initialLoadDone.current = true;
             loadExpenses();
         }
+        startAnimation();
+    }, [filteredExpenses.length, isLoading, loadExpenses, startAnimation]);
 
-        // Animate entrance
-        Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 800,
-                useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 600,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [filteredExpenses.length, isLoading]);
+    const handleMonthChange = useCallback(
+        (date: Date) => {
+            setCurrentMonthDate(date);
+        },
+        [setCurrentMonthDate]
+    );
 
-    const handleMonthChange = (date: Date) => {
-        setCurrentMonthDate(date);
-        // The loadExpenses will be triggered by the useEffect in ExpenseContext
-        // that watches currentMonthDate changes
-    };
+    const handleExpensePress = useCallback(
+        (expense: Expense) => {
+            navigation.navigate("ExpenseDetails", { id: expense.id });
+        },
+        [navigation]
+    );
 
-    const handleExpensePress = (expense: Expense) => {
-        navigation.navigate("ExpenseDetails", { id: expense.id });
-    };
-
-    const handleAddExpense = () => {
+    const handleAddExpense = useCallback(() => {
         navigation.navigate("ExpenseForm", {});
-    };
+    }, [navigation]);
 
-    const onRefresh = async () => {
-        setRefreshing(true);
+    const onRefresh = useCallback(async () => {
+        setRefreshingState(true);
         await loadExpenses();
-        setRefreshing(false);
-    };
+        setRefreshingState(false);
+    }, [loadExpenses, setRefreshingState]);
 
-    const renderExpenseItem = ({ item }: { item: Expense }) => (
-        <ExpenseItem expense={item} onPress={handleExpensePress} />
+    const renderExpenseItem = useCallback(
+        ({ item }: { item: Expense }) => (
+            <ExpenseItem expense={item} onPress={handleExpensePress} />
+        ),
+        [handleExpensePress]
     );
 
     return (
@@ -108,15 +86,7 @@ const ExpensesScreen = () => {
             <View style={styles.container}>
                 <LinearGradient colors={["#8B0000", "#A52A2A"]} style={styles.headerGradient}>
                     <SafeAreaView style={styles.safeArea}>
-                        <Animated.View
-                            style={[
-                                styles.headerContent,
-                                {
-                                    opacity: fadeAnim,
-                                    transform: [{ translateY: slideAnim }],
-                                },
-                            ]}
-                        >
+                        <Animated.View style={[styles.headerContent, animatedStyle]}>
                             <Text style={styles.headerTitle}>Despesas</Text>
                             <Text style={styles.headerSubtitle}>Controle seus gastos</Text>
                         </Animated.View>
@@ -139,7 +109,7 @@ const ExpensesScreen = () => {
                     )}
 
                     {filteredExpenses.length === 0 && !isLoading ? (
-                        <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
+                        <Animated.View style={[styles.emptyContainer, animatedStyle]}>
                             <View style={styles.emptyIconContainer}>
                                 <Text style={styles.emptyIcon}>💸</Text>
                             </View>
@@ -164,10 +134,7 @@ const ExpensesScreen = () => {
                                                         Total de Despesas
                                                     </Text>
                                                     <Text style={styles.statValue}>
-                                                        {totalExpenses.toLocaleString("pt-BR", {
-                                                            style: "currency",
-                                                            currency: "BRL",
-                                                        })}
+                                                        {formatCurrency(totalExpenses)}
                                                     </Text>
                                                 </View>
                                             </View>

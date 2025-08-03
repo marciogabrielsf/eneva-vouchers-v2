@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -15,10 +15,16 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { RootStackParamList, Voucher } from "../types";
 import { useVouchers } from "../context/VoucherContext";
+import { validateForm } from "../utils/validators";
+import {
+    formatCurrencyInput,
+    parseCurrencyToNumber,
+    formatValueToCurrency,
+} from "../utils/formatters";
+import { useFormSubmission } from "../hooks/common";
 
 type VoucherFormRouteProp = RouteProp<RootStackParamList, "VoucherForm">;
 type VoucherFormNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -26,7 +32,7 @@ type VoucherFormNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const VoucherFormScreen = () => {
     const navigation = useNavigation<VoucherFormNavigationProp>();
     const route = useRoute<VoucherFormRouteProp>();
-    const { addVoucher, updateVoucher, getVoucherById, isLoading, error } = useVouchers();
+    const { addVoucher, updateVoucher, isLoading, error } = useVouchers();
 
     const voucher = route.params?.voucher;
     const isEditing = !!voucher;
@@ -38,164 +44,107 @@ const VoucherFormScreen = () => {
     const [start, setStart] = useState("");
     const [destination, setDestination] = useState("");
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
 
-    // Handle currency input with right-to-left input pattern
-    const handleValueChange = (text: string) => {
-        // Keep only digits
-        const digits = text.replace(/\D/g, "");
-
-        if (digits.length === 0) {
-            setValue("");
-            return;
-        }
-
-        // Convert to number for proper formatting (remove leading zeros)
-        const valueInCents = parseInt(digits, 10);
-
-        // Format as currency
-        if (valueInCents < 10) {
-            setValue(`R$ 0,0${valueInCents}`);
-        } else if (valueInCents < 100) {
-            setValue(`R$ 0,${valueInCents}`);
-        } else {
-            // Convert to string and separate whole and decimal parts
-            const valueString = valueInCents.toString();
-            const centsStr = valueString.slice(-2);
-            const wholeStr = valueString.slice(0, -2) || "0";
-
-            // Parse to number to remove leading zeros in the whole part
-            const whole = parseInt(wholeStr, 10);
-
-            // Format with thousand separators
-            const formatted = whole.toLocaleString("pt-BR");
-            setValue(`R$ ${formatted},${centsStr}`);
-        }
-    };
-
-    // Format value for display (used when loading existing voucher)
-    const formatCurrency = (value: string) => {
-        if (!value) return "";
-
-        try {
-            // Convert string to number
-            const numericValue = parseFloat(value.replace(",", "."));
-            if (isNaN(numericValue)) return "";
-
-            // Format using toLocaleString to get correct thousand separators
-            return numericValue.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-                minimumFractionDigits: 2,
-            });
-        } catch (e) {
-            return "";
-        }
-    };
+    // Handle currency input with utility function
+    const handleValueChange = useCallback((text: string) => {
+        setValue(formatCurrencyInput(text));
+    }, []);
 
     useEffect(() => {
         if (isEditing && voucher) {
             setTaxNumber(voucher.taxNumber);
             setRequestCode(voucher.requestCode);
             setDate(new Date(voucher.date));
-            setValue(formatCurrency(voucher.value.toString()));
+            setValue(formatValueToCurrency(voucher.value));
             setStart(voucher.start);
             setDestination(voucher.destination);
         }
     }, [voucher, isEditing]);
 
+    const performSubmit = useCallback(async () => {
+        // Validate form fields
+        if (!taxNumber.trim()) {
+            Alert.alert("Erro", "Número fiscal é obrigatório");
+            return;
+        }
+        if (!requestCode.trim()) {
+            Alert.alert("Erro", "Código de solicitação é obrigatório");
+            return;
+        }
+        if (!value.trim()) {
+            Alert.alert("Erro", "Valor é obrigatório");
+            return;
+        }
+        if (!start.trim()) {
+            Alert.alert("Erro", "Local de origem é obrigatório");
+            return;
+        }
+        if (!destination.trim()) {
+            Alert.alert("Erro", "Destino é obrigatório");
+            return;
+        }
+
+        const numericValue = parseCurrencyToNumber(value);
+
+        // Validate the parsed value
+        if (isNaN(numericValue)) {
+            Alert.alert("Erro", "Valor deve ser um número válido");
+            return;
+        }
+
+        const voucherData: Omit<Voucher, "id"> = {
+            taxNumber,
+            requestCode,
+            date: format(date, "yyyy-MM-dd"),
+            value: numericValue,
+            start,
+            destination,
+        };
+
+        if (isEditing && voucher) {
+            await updateVoucher(voucher.id, voucherData);
+            Alert.alert("Sucesso", "Voucher atualizado com sucesso", [
+                { text: "OK", onPress: () => navigation.goBack() },
+            ]);
+        } else {
+            await addVoucher(voucherData);
+            Alert.alert("Sucesso", "Voucher adicionado com sucesso", [
+                { text: "OK", onPress: () => navigation.goBack() },
+            ]);
+        }
+    }, [
+        taxNumber,
+        requestCode,
+        date,
+        value,
+        start,
+        destination,
+        isEditing,
+        voucher,
+        updateVoucher,
+        addVoucher,
+        navigation,
+    ]);
+
+    const { submitting, handleSubmit } = useFormSubmission(performSubmit);
+
     // Show error alert if API call fails
     useEffect(() => {
         if (error && submitting) {
             Alert.alert("Erro", error);
-            setSubmitting(false);
         }
     }, [error, submitting]);
 
-    const handleDateChange = (event: any, selectedDate?: Date) => {
+    const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
         setShowDatePicker(Platform.OS === "ios");
         if (selectedDate) {
             setDate(selectedDate);
         }
-    };
+    }, []);
 
-    const showDatePickerModal = () => {
+    const showDatePickerModal = useCallback(() => {
         setShowDatePicker(true);
-    };
-
-    const validateForm = () => {
-        if (!taxNumber.trim()) {
-            Alert.alert("Erro", "Número fiscal é obrigatório");
-            return false;
-        }
-        if (!requestCode.trim()) {
-            Alert.alert("Erro", "Código de solicitação é obrigatório");
-            return false;
-        }
-        if (!value.trim()) {
-            Alert.alert("Erro", "Valor é obrigatório");
-            return false;
-        }
-        if (!start.trim()) {
-            Alert.alert("Erro", "Local de origem é obrigatório");
-            return false;
-        }
-        if (!destination.trim()) {
-            Alert.alert("Erro", "Destino é obrigatório");
-            return false;
-        }
-        return true;
-    };
-
-    const handleSubmit = async () => {
-        if (!validateForm()) return;
-
-        setSubmitting(true);
-
-        try {
-            // Parse the masked currency value by removing currency formatting
-            let cleanValue = value
-                .replace(/R\$\s?/g, "") // Remove R$ prefix
-                .replace(/\./g, "") // Remove thousand separators
-                .replace(",", ".") // Replace decimal comma with dot
-                .trim();
-
-            // Default to 0 if empty
-            const numericValue = cleanValue ? parseFloat(cleanValue) : 0;
-
-            // Validate the parsed value
-            if (isNaN(numericValue)) {
-                Alert.alert("Erro", "Valor deve ser um número válido");
-                setSubmitting(false);
-                return;
-            }
-
-            const voucherData: Omit<Voucher, "id"> = {
-                taxNumber,
-                requestCode,
-                date: format(date, "yyyy-MM-dd"),
-                value: numericValue,
-                start,
-                destination,
-            };
-
-            if (isEditing && voucher) {
-                await updateVoucher(voucher.id, voucherData);
-                Alert.alert("Sucesso", "Voucher atualizado com sucesso", [
-                    { text: "OK", onPress: () => navigation.goBack() },
-                ]);
-            } else {
-                await addVoucher(voucherData);
-                Alert.alert("Sucesso", "Voucher adicionado com sucesso", [
-                    { text: "OK", onPress: () => navigation.goBack() },
-                ]);
-            }
-        } catch (err) {
-            // Error is handled by the useEffect that watches the error state
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    }, []);
 
     return (
         <KeyboardAvoidingView

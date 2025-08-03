@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -15,11 +15,16 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { RootStackParamList, Expense, ExpenseCategory, CreateExpenseData } from "../types";
 import { useExpenses } from "../context/ExpenseContext";
 import { Picker } from "@react-native-picker/picker";
+import {
+    formatCurrencyInput,
+    parseCurrencyToNumber,
+    formatValueToCurrency,
+} from "../utils/formatters";
+import { useFormSubmission } from "../hooks/common";
 
 type ExpenseFormRouteProp = RouteProp<RootStackParamList, "ExpenseForm">;
 type ExpenseFormNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -27,7 +32,7 @@ type ExpenseFormNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const ExpenseFormScreen = () => {
     const navigation = useNavigation<ExpenseFormNavigationProp>();
     const route = useRoute<ExpenseFormRouteProp>();
-    const { addExpense, updateExpense, getExpenseById, isLoading, error } = useExpenses();
+    const { addExpense, updateExpense, isLoading, error } = useExpenses();
 
     const expense = route.params?.expense;
     const isEditing = !!expense;
@@ -38,7 +43,6 @@ const ExpenseFormScreen = () => {
     const [description, setDescription] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("");
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
 
     // Category options for the picker
     const categoryOptions = [
@@ -53,58 +57,14 @@ const ExpenseFormScreen = () => {
         { label: "Outros", value: ExpenseCategory.OTHER },
     ];
 
-    // Handle currency input with right-to-left input pattern
-    const handleValueChange = (text: string) => {
-        // Keep only digits
-        const digits = text.replace(/\D/g, "");
-
-        if (digits.length === 0) {
-            setValue("");
-            return;
-        }
-
-        // Convert to number for proper formatting (remove leading zeros)
-        const valueInCents = parseInt(digits, 10);
-
-        // Format as currency
-        if (valueInCents < 10) {
-            setValue(`R$ 0,0${valueInCents}`);
-        } else if (valueInCents < 100) {
-            setValue(`R$ 0,${valueInCents}`);
-        } else {
-            // Convert to string and separate whole and decimal parts
-            const valueString = valueInCents.toString();
-            const centsStr = valueString.slice(-2);
-            const wholeStr = valueString.slice(0, -2) || "0";
-
-            // Parse to number to remove leading zeros in the whole part
-            const whole = parseInt(wholeStr, 10);
-
-            // Format with thousand separators
-            const formatted = whole.toLocaleString("pt-BR");
-            setValue(`R$ ${formatted},${centsStr}`);
-        }
-    };
-
-    // Format value for display (used when loading existing expense)
-    const formatCurrency = (value: number) => {
-        if (!value) return "";
-
-        try {
-            // Format using toLocaleString to get correct thousand separators
-            return value.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-                minimumFractionDigits: 2,
-            });
-        } catch (e) {
-            return "";
-        }
-    };
+    // Handle currency input with utility function
+    const handleValueChange = useCallback((text: string) => {
+        setValue(formatCurrencyInput(text));
+    }, []);
 
     useEffect(() => {
         if (isEditing && expense) {
-            setValue(formatCurrency(expense.value));
+            setValue(formatValueToCurrency(expense.value));
             setCategory(expense.category);
             setDate(new Date(expense.date));
             setDescription(expense.description || "");
@@ -112,85 +72,75 @@ const ExpenseFormScreen = () => {
         }
     }, [expense, isEditing]);
 
+    const performSubmit = useCallback(async () => {
+        if (!value.trim()) {
+            Alert.alert("Erro", "Valor é obrigatório");
+            return;
+        }
+        if (!category) {
+            Alert.alert("Erro", "Categoria é obrigatória");
+            return;
+        }
+
+        const numericValue = parseCurrencyToNumber(value);
+
+        // Validate the parsed value
+        if (isNaN(numericValue) || numericValue <= 0) {
+            Alert.alert("Erro", "Valor deve ser um número válido maior que zero");
+            return;
+        }
+
+        const expenseData: CreateExpenseData = {
+            value: numericValue,
+            category,
+            date: format(date, "yyyy-MM-dd"),
+            description: description.trim() || undefined,
+            paymentMethod: paymentMethod.trim() || undefined,
+        };
+
+        if (isEditing && expense) {
+            await updateExpense(expense.id, expenseData);
+            Alert.alert("Sucesso", "Despesa atualizada com sucesso", [
+                { text: "OK", onPress: () => navigation.goBack() },
+            ]);
+        } else {
+            await addExpense(expenseData);
+            Alert.alert("Sucesso", "Despesa adicionada com sucesso", [
+                { text: "OK", onPress: () => navigation.goBack() },
+            ]);
+        }
+    }, [
+        value,
+        category,
+        date,
+        description,
+        paymentMethod,
+        isEditing,
+        expense,
+        updateExpense,
+        addExpense,
+        navigation,
+    ]);
+
+    const { submitting, handleSubmit } = useFormSubmission(performSubmit);
+
     // Show error alert if API call fails
     useEffect(() => {
         if (error && submitting) {
             Alert.alert("Erro", error);
-            setSubmitting(false);
         }
     }, [error, submitting]);
 
-    const handleDateChange = (event: any, selectedDate?: Date) => {
+    const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
         setShowDatePicker(Platform.OS === "ios");
         if (selectedDate) {
             setDate(selectedDate);
         }
-    };
+    }, []);
 
-    const showDatePickerModal = () => {
+    const showDatePickerModal = useCallback(() => {
         setShowDatePicker(true);
-    };
-
-    const validateForm = () => {
-        if (!value.trim()) {
-            Alert.alert("Erro", "Valor é obrigatório");
-            return false;
-        }
-        if (!category) {
-            Alert.alert("Erro", "Categoria é obrigatória");
-            return false;
-        }
-        return true;
-    };
-
-    const handleSubmit = async () => {
-        if (!validateForm()) return;
-
-        setSubmitting(true);
-
-        try {
-            // Parse the masked currency value by removing currency formatting
-            let cleanValue = value
-                .replace(/R\$\s?/g, "") // Remove R$ prefix
-                .replace(/\./g, "") // Remove thousand separators
-                .replace(",", ".") // Replace decimal comma with dot
-                .trim();
-
-            // Default to 0 if empty
-            const numericValue = cleanValue ? parseFloat(cleanValue) : 0;
-
-            // Validate the parsed value
-            if (isNaN(numericValue) || numericValue <= 0) {
-                Alert.alert("Erro", "Valor deve ser um número válido maior que zero");
-                setSubmitting(false);
-                return;
-            }
-
-            const expenseData: CreateExpenseData = {
-                value: numericValue,
-                category,
-                date: format(date, "yyyy-MM-dd"),
-                description: description.trim() || undefined,
-                paymentMethod: paymentMethod.trim() || undefined,
-            };
-
-            if (isEditing && expense) {
-                await updateExpense(expense.id, expenseData);
-                Alert.alert("Sucesso", "Despesa atualizada com sucesso", [
-                    { text: "OK", onPress: () => navigation.goBack() },
-                ]);
-            } else {
-                await addExpense(expenseData);
-                Alert.alert("Sucesso", "Despesa adicionada com sucesso", [
-                    { text: "OK", onPress: () => navigation.goBack() },
-                ]);
-            }
-        } catch (err) {
-            // Error is handled by the useEffect that watches the error state
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    }, []);
 
     return (
         <KeyboardAvoidingView

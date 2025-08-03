@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -14,20 +14,19 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { RootStackParamList, Voucher, HomeSummaryPeriod } from "../types";
 import { useVouchers } from "../context/VoucherContext";
-import { useExpenses } from "../context/ExpenseContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import Carousel from "react-native-reanimated-carousel";
 import { LinearGradient } from "expo-linear-gradient";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
 import voucherService from "../services/voucherService";
+import { formatCurrency, formatDateToBR } from "../utils/formatters";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen = () => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const { isLoading: vouchersLoading } = useVouchers();
-    const { expenses, totalExpenses } = useExpenses();
     const { discountPercentage, monthStartDay } = useSettings();
     const [activeSlide, setActiveSlide] = useState(0);
     const [recentVouchers, setRecentVouchers] = useState<Voucher[]>([]);
@@ -36,46 +35,32 @@ const HomeScreen = () => {
     const { width } = useWindowDimensions();
 
     // Load home summary (periods + recent vouchers) from server
+    const loadHomeSummary = useCallback(async () => {
+        setLoadingHomeSummary(true);
+        try {
+            const summary = await voucherService.getHomeSummary(monthStartDay);
+            setHomePeriods(summary.periods);
+            setRecentVouchers(summary.recentVouchers);
+        } catch (error) {
+            console.error("Error loading home summary:", error);
+            // Fallback to empty data
+            setHomePeriods([]);
+            setRecentVouchers([]);
+        } finally {
+            setLoadingHomeSummary(false);
+        }
+    }, [monthStartDay]);
+
     useEffect(() => {
-        const loadHomeSummary = async () => {
-            setLoadingHomeSummary(true);
-            try {
-                const summary = await voucherService.getHomeSummary(monthStartDay);
-                setHomePeriods(summary.periods);
-                setRecentVouchers(summary.recentVouchers);
-            } catch (error) {
-                console.error("Error loading home summary:", error);
-                // Fallback to empty data
-                setHomePeriods([]);
-                setRecentVouchers([]);
-            } finally {
-                setLoadingHomeSummary(false);
-            }
-        };
-
         loadHomeSummary();
-    }, [monthStartDay]); // Reload when monthStartDay changes
+    }, [loadHomeSummary]);
 
-    // Helper for date formatting with proper capitalization
-    const formatPtBrDate = (date: Date, formatString: string) => {
-        return date.toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            timeZone: "utc",
-        });
-    };
-
-    const formatCurrency = (value: number) => {
-        return value.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        });
-    };
-
-    const navigateToVoucherDetails = (id: string) => {
-        navigation.navigate("VoucherDetails", { id });
-    };
+    const navigateToVoucherDetails = useCallback(
+        (id: string) => {
+            navigation.navigate("VoucherDetails", { id });
+        },
+        [navigation]
+    );
 
     // Create carousel data from server response
     const carouselData = homePeriods.map((period, index) => ({
@@ -214,10 +199,7 @@ const HomeScreen = () => {
                                             {formatCurrency(voucher.value)}
                                         </Text>
                                         <Text style={styles.recentItemDate}>
-                                            {formatPtBrDate(
-                                                new Date(voucher.date),
-                                                "dd 'de' MMMM 'de' yyyy"
-                                            )}
+                                            {formatDateToBR(new Date(voucher.date))}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>

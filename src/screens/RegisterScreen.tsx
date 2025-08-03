@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -16,6 +16,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { useAuth } from "../context/AuthContext";
 import { RootStackParamList } from "../types";
+import { validateForm, validateEmail } from "../utils/validators";
+import { useFormSubmission } from "../hooks/common";
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Register">;
 
@@ -28,74 +30,9 @@ const RegisterScreen = () => {
     const [cpf, setCpf] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-
-    // Show error alert if API call fails
-    useEffect(() => {
-        if (error && submitting) {
-            Alert.alert("Erro", error);
-            setSubmitting(false);
-        }
-    }, [error, submitting]);
-
-    const validateForm = () => {
-        if (!name.trim()) {
-            Alert.alert("Erro", "Nome é obrigatório");
-            return false;
-        }
-        if (!email.trim()) {
-            Alert.alert("Erro", "Email é obrigatório");
-            return false;
-        }
-        if (!cpf.trim()) {
-            Alert.alert("Erro", "CPF é obrigatório");
-            return false;
-        }
-        if (!password.trim()) {
-            Alert.alert("Erro", "Senha é obrigatória");
-            return false;
-        }
-        if (!confirmPassword.trim()) {
-            Alert.alert("Erro", "Confirmação de senha é obrigatória");
-            return false;
-        }
-        if (password !== confirmPassword) {
-            Alert.alert("Erro", "As senhas não coincidem");
-            return false;
-        }
-        return true;
-    };
-
-    const handleRegister = async () => {
-        if (!validateForm()) return;
-
-        setSubmitting(true);
-        try {
-            await register({
-                name,
-                email,
-                cpf,
-                password,
-                confirmpassword: confirmPassword,
-            });
-            Alert.alert(
-                "Sucesso",
-                "Cadastro realizado com sucesso! Faça login com suas credenciais.",
-                [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-            );
-        } catch (err) {
-            // Error is handled by the useEffect that watches the error state
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handleBackToLogin = () => {
-        navigation.navigate("Login");
-    };
 
     // Format CPF as user types: XXX.XXX.XXX-XX
-    const formatCPF = (text: string) => {
+    const formatCPF = useCallback((text: string) => {
         // Remove all non-numeric characters
         const cleaned = text.replace(/\D/g, "");
 
@@ -117,11 +54,73 @@ const RegisterScreen = () => {
         }
 
         return formatted;
-    };
+    }, []);
 
-    const handleCPFChange = (text: string) => {
-        setCpf(formatCPF(text));
-    };
+    const handleCPFChange = useCallback(
+        (text: string) => {
+            setCpf(formatCPF(text));
+        },
+        [formatCPF]
+    );
+
+    const performRegister = useCallback(async () => {
+        // Validate all fields
+        if (!name.trim()) {
+            Alert.alert("Erro", "Nome é obrigatório");
+            return;
+        }
+
+        const emailError = validateEmail(email);
+        if (emailError) {
+            Alert.alert("Erro", emailError);
+            return;
+        }
+
+        if (!cpf.trim()) {
+            Alert.alert("Erro", "CPF é obrigatório");
+            return;
+        }
+
+        if (!password.trim()) {
+            Alert.alert("Erro", "Senha é obrigatória");
+            return;
+        }
+
+        if (!confirmPassword.trim()) {
+            Alert.alert("Erro", "Confirmação de senha é obrigatória");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert("Erro", "As senhas não coincidem");
+            return;
+        }
+
+        await register({
+            name,
+            email,
+            cpf,
+            password,
+            confirmpassword: confirmPassword,
+        });
+
+        Alert.alert("Sucesso", "Cadastro realizado com sucesso! Faça login com suas credenciais.", [
+            { text: "OK", onPress: () => navigation.navigate("Login") },
+        ]);
+    }, [name, email, cpf, password, confirmPassword, register, navigation]);
+
+    const { submitting, handleSubmit } = useFormSubmission(performRegister);
+
+    // Show error alert if API call fails
+    useEffect(() => {
+        if (error && submitting) {
+            Alert.alert("Erro", error);
+        }
+    }, [error, submitting]);
+
+    const handleBackToLogin = useCallback(() => {
+        navigation.navigate("Login");
+    }, [navigation]);
 
     return (
         <KeyboardAvoidingView
@@ -192,7 +191,7 @@ const RegisterScreen = () => {
                             styles.buttonPrimary,
                             (isLoading || submitting) && styles.disabledButton,
                         ]}
-                        onPress={handleRegister}
+                        onPress={handleSubmit}
                         disabled={isLoading || submitting}
                     >
                         {isLoading || submitting ? (

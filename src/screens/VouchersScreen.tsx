@@ -1,13 +1,12 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
     ActivityIndicator,
-    Animated,
     RefreshControl,
-    Dimensions,
+    Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -21,9 +20,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../context/SettingsContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { FocusAwareStatusBar } from "../components/focusAwareStatusBar";
-type VoucherScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { useLoadingState, useScreenAnimation } from "../hooks/common";
+import { formatCurrency } from "../utils/formatters";
 
-const { width } = Dimensions.get("window");
+type VoucherScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const VouchersScreen = () => {
     const navigation = useNavigation<VoucherScreenNavigationProp>();
@@ -33,31 +33,13 @@ const VouchersScreen = () => {
         setCurrentMonthDate,
         totalEarnings,
         isLoading,
-        error,
         loadVouchers,
         getMonthRangeLabel,
     } = useVouchers();
 
     const { discountPercentage } = useSettings();
-
-    // Animation values
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
-    const [refreshing, setRefreshing] = useState(false);
-
-    // Use a ref to track if initial data has been loaded to prevent multiple loads
-    const initialLoadDone = useRef(false);
-
-    // Instead of using useFocusEffect, use a regular useEffect with an isMounted ref
-    // to ensure we don't make API calls after component unmounts
-    const isMounted = useRef(true);
-
-    useEffect(() => {
-        return () => {
-            // Clean up when component unmounts
-            isMounted.current = false;
-        };
-    }, []);
+    const { refreshing, setRefreshingState, initialLoadDone } = useLoadingState();
+    const { animatedStyle, startAnimation } = useScreenAnimation();
 
     // Load data once when component mounts
     useEffect(() => {
@@ -66,44 +48,38 @@ const VouchersScreen = () => {
             initialLoadDone.current = true;
             loadVouchers();
         }
+        startAnimation();
+    }, [filteredVouchers.length, isLoading, loadVouchers, startAnimation]);
 
-        // Animate entrance
-        Animated.parallel([
-            Animated.timing(fadeAnim, {
-                toValue: 1,
-                duration: 800,
-                useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 600,
-                useNativeDriver: true,
-            }),
-        ]).start();
-    }, [filteredVouchers.length, isLoading]);
+    const handleMonthChange = useCallback(
+        (date: Date) => {
+            setCurrentMonthDate(date);
+        },
+        [setCurrentMonthDate]
+    );
 
-    const handleMonthChange = (date: Date) => {
-        setCurrentMonthDate(date);
-        // The loadVouchers will be triggered by the useEffect in VoucherContext
-        // that watches currentMonthDate changesw
-    };
+    const handleVoucherPress = useCallback(
+        (voucher: Voucher) => {
+            navigation.navigate("VoucherDetails", { id: voucher.id });
+        },
+        [navigation]
+    );
 
-    const handleVoucherPress = (voucher: Voucher) => {
-        navigation.navigate("VoucherDetails", { id: voucher.id });
-    };
-
-    const handleAddVoucher = () => {
+    const handleAddVoucher = useCallback(() => {
         navigation.navigate("VoucherForm", {});
-    };
+    }, [navigation]);
 
-    const onRefresh = async () => {
-        setRefreshing(true);
+    const onRefresh = useCallback(async () => {
+        setRefreshingState(true);
         await loadVouchers();
-        setRefreshing(false);
-    };
+        setRefreshingState(false);
+    }, [loadVouchers, setRefreshingState]);
 
-    const renderVoucherItem = ({ item }: { item: Voucher }) => (
-        <VoucherItem voucher={item} onPress={handleVoucherPress} />
+    const renderVoucherItem = useCallback(
+        ({ item }: { item: Voucher }) => (
+            <VoucherItem voucher={item} onPress={handleVoucherPress} />
+        ),
+        [handleVoucherPress]
     );
 
     return (
@@ -112,15 +88,7 @@ const VouchersScreen = () => {
             <View style={styles.container}>
                 <LinearGradient colors={["#000000", "#161616"]} style={styles.headerGradient}>
                     <SafeAreaView style={styles.safeArea}>
-                        <Animated.View
-                            style={[
-                                styles.headerContent,
-                                {
-                                    opacity: fadeAnim,
-                                    transform: [{ translateY: slideAnim }],
-                                },
-                            ]}
-                        >
+                        <Animated.View style={[styles.headerContent, animatedStyle]}>
                             <Text style={styles.headerTitle}>Vouchers</Text>
                             <Text style={styles.headerSubtitle}>Gerencie seus recebimentos</Text>
                         </Animated.View>
@@ -143,7 +111,7 @@ const VouchersScreen = () => {
                     )}
 
                     {filteredVouchers.length === 0 && !isLoading ? (
-                        <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
+                        <Animated.View style={[styles.emptyContainer, animatedStyle]}>
                             <View style={styles.emptyIconContainer}>
                                 <Text style={styles.emptyIcon}>📄</Text>
                             </View>
@@ -166,23 +134,17 @@ const VouchersScreen = () => {
                                                 <View style={styles.statItem}>
                                                     <Text style={styles.statLabel}>Subtotal</Text>
                                                     <Text style={styles.statValue}>
-                                                        {totalEarnings.toLocaleString("pt-BR", {
-                                                            style: "currency",
-                                                            currency: "BRL",
-                                                        })}
+                                                        {formatCurrency(totalEarnings)}
                                                     </Text>
                                                 </View>
                                                 <View style={styles.statDivider} />
                                                 <View style={styles.statItem}>
                                                     <Text style={styles.statLabel}>Líquido</Text>
                                                     <Text style={styles.statValueHighlight}>
-                                                        {(
+                                                        {formatCurrency(
                                                             totalEarnings -
-                                                            totalEarnings * discountPercentage
-                                                        ).toLocaleString("pt-BR", {
-                                                            style: "currency",
-                                                            currency: "BRL",
-                                                        })}
+                                                                totalEarnings * discountPercentage
+                                                        )}
                                                     </Text>
                                                 </View>
                                             </View>

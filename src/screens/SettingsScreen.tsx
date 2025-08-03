@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -25,14 +25,14 @@ const SettingsScreen = () => {
     const [discountInputValue, setDiscountInputValue] = useState(discountPercentage.toString());
     const [monthDayInputValue, setMonthDayInputValue] = useState(monthStartDay.toString());
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         Alert.alert("Sair", "Tem certeza que deseja sair?", [
             { text: "Cancelar", style: "cancel" },
             { text: "Sair", style: "destructive", onPress: () => logout() },
         ]);
-    };
+    }, [logout]);
 
-    const handleSaveDiscount = async () => {
+    const handleSaveDiscount = useCallback(async () => {
         const value = parseFloat(discountInputValue);
         if (isNaN(value) || value < 0 || value > 1) {
             Alert.alert("Valor Inválido", "Por favor, insira um valor entre 0 e 1");
@@ -41,9 +41,9 @@ const SettingsScreen = () => {
 
         await setDiscountPercentage(value);
         setDiscountModalVisible(false);
-    };
+    }, [discountInputValue, setDiscountPercentage]);
 
-    const handleSaveMonthStartDay = async () => {
+    const handleSaveMonthStartDay = useCallback(async () => {
         const day = parseInt(monthDayInputValue);
         if (isNaN(day) || day < 1 || day > 31) {
             Alert.alert("Valor Inválido", "Por favor, insira um valor entre 1 e 31");
@@ -52,7 +52,7 @@ const SettingsScreen = () => {
 
         await setMonthStartDay(day);
         setMonthDayModalVisible(false);
-    };
+    }, [monthDayInputValue, setMonthStartDay]);
 
     const userFirstAndSecondName = user?.name.split(" ").slice(0, 2).join(" ") || "Usuário";
 

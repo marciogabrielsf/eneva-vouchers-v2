@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -10,61 +10,49 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { COLORS, FONTS, SIZES } from "../theme";
 import { useAuth } from "../context/AuthContext";
 import { RootStackParamList } from "../types";
+import { validateForm, validateEmail } from "../utils/validators";
+import { useFormSubmission } from "../hooks/common";
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">;
 
 const LoginScreen = () => {
     const navigation = useNavigation<LoginScreenNavigationProp>();
     const { login, isLoading, error } = useAuth();
-
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [submitting, setSubmitting] = useState(false);
+
+    const performLogin = useCallback(async () => {
+        const validationError = validateForm([
+            { value: email, name: "Email", validator: validateEmail },
+            { value: password, name: "Senha" },
+        ]);
+
+        if (validationError) {
+            Alert.alert("Erro", validationError);
+            return;
+        }
+
+        await login({ email, password });
+    }, [email, password, login]);
+
+    const { submitting, handleSubmit } = useFormSubmission(performLogin);
 
     // Show error alert if API call fails
     useEffect(() => {
         if (error && submitting) {
             Alert.alert("Erro", error);
-            setSubmitting(false);
         }
     }, [error, submitting]);
 
-    const validateForm = () => {
-        if (!email.trim()) {
-            Alert.alert("Erro", "Email é obrigatório");
-            return false;
-        }
-        if (!password.trim()) {
-            Alert.alert("Erro", "Senha é obrigatória");
-            return false;
-        }
-        return true;
-    };
-
-    const handleLogin = async () => {
-        if (!validateForm()) return;
-
-        setSubmitting(true);
-        try {
-            await login({ email, password });
-            // No need to navigate - App.tsx will handle routing based on auth state
-        } catch (err) {
-            // Error is handled by the useEffect that watches the error state
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    const handleRegister = () => {
+    const handleRegister = useCallback(() => {
         navigation.navigate("Register");
-    };
+    }, [navigation]);
 
     return (
         <KeyboardAvoidingView
@@ -109,7 +97,7 @@ const LoginScreen = () => {
                             styles.buttonPrimary,
                             (isLoading || submitting) && styles.disabledButton,
                         ]}
-                        onPress={handleLogin}
+                        onPress={handleSubmit}
                         disabled={isLoading || submitting}
                     >
                         {isLoading || submitting ? (
